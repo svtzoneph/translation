@@ -3,20 +3,60 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>K-Drama Live Subtitles (Custom + Audio)</title>
+    <title>K-Drama Live Subtitles</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;700&family=Roboto:wght@400;700&family=Lora:wght@400;700&family=Montserrat:wght@400;800&family=Comic+Neue:wght@700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;700&family=Roboto:wght@400;500;700&display=swap');
 
         body {
             font-family: 'Roboto', sans-serif;
             background-color: #1a1a1a;
             color: #e5e5e5;
             overflow-x: hidden;
+            transition: background-color 0.3s ease;
         }
 
-        .korean-font { font-family: 'Noto Sans KR', sans-serif; }
+        .korean-font {
+            font-family: 'Noto Sans KR', sans-serif;
+        }
+
+        /* Subtitle Mode Styles */
+        body.subtitle-mode {
+            background-color: #000000;
+        }
+
+        body.subtitle-mode .controls-panel,
+        body.subtitle-mode .header-area {
+            display: none !important;
+        }
+
+        body.subtitle-mode #subtitle-container {
+            position: fixed;
+            bottom: 10%;
+            left: 5%;
+            right: 5%;
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-end;
+            height: 80vh;
+            pointer-events: none; /* Let touches pass through if needed, though we might want exit button */
+        }
+        
+        body.subtitle-mode .exit-btn {
+            display: block;
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 50;
+            pointer-events: auto;
+            opacity: 0.3;
+        }
+        
+        body.subtitle-mode .exit-btn:hover {
+            opacity: 1;
+        }
 
         /* Animations */
         @keyframes pulse-ring {
@@ -25,567 +65,440 @@
             100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
         }
 
-        .recording-pulse { animation: pulse-ring 2s infinite; }
-
-        /* Audio Visualizer Bars */
-        .audio-bar {
-            width: 4px;
-            background: #a78bfa;
-            border-radius: 2px;
-            animation: bounce 0.5s infinite ease-in-out;
-        }
-        @keyframes bounce { 0%, 100% { height: 5px; } 50% { height: 20px; } }
-
-        /* Hidden elements for PiP */
-        #pip-canvas, #pip-video, #tab-audio-player {
-            position: absolute;
-            top: -9999px;
-            left: -9999px;
-            visibility: hidden;
+        .recording-pulse {
+            animation: pulse-ring 2s infinite;
         }
 
-        /* Custom Scrollbar */
-        ::-webkit-scrollbar { width: 8px; }
-        ::-webkit-scrollbar-track { background: #2d2d2d; }
-        ::-webkit-scrollbar-thumb { background: #555; border-radius: 4px; }
-        ::-webkit-scrollbar-thumb:hover { background: #777; }
+        .subtitle-text {
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.8);
+        }
+        
+        /* Scrollbar for log */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #2d2d2d; 
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #555; 
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #777; 
+        }
     </style>
 </head>
 <body class="min-h-screen flex flex-col">
 
-    <header class="bg-gray-900 border-b border-gray-800 p-4 shadow-lg sticky top-0 z-20">
+    <!-- Header -->
+    <header class="header-area bg-gray-900 border-b border-gray-800 p-4 shadow-lg sticky top-0 z-20">
         <div class="max-w-4xl mx-auto flex justify-between items-center">
             <div class="flex items-center gap-3">
                 <div class="bg-gradient-to-r from-pink-500 to-violet-600 w-10 h-10 rounded-lg flex items-center justify-center text-white font-bold text-xl shadow-lg">
                     <i class="fa-solid fa-language"></i>
                 </div>
                 <div>
-                    <h1 class="font-bold text-xl text-white tracking-tight">K-Live Subs <span class="text-xs bg-violet-600 px-2 py-0.5 rounded text-white ml-2">Pro</span></h1>
-                    <p class="text-xs text-gray-400">Customizable Real-time Overlay</p>
+                    <h1 class="font-bold text-xl text-white tracking-tight">K-Live Subs</h1>
+                    <p class="text-xs text-gray-400">Korean Speech to AI English</p>
                 </div>
             </div>
-            <button onclick="toggleSettings()" class="text-gray-400 hover:text-white transition p-2 border border-gray-700 rounded-lg hover:bg-gray-800">
-                <i class="fa-solid fa-sliders text-lg mr-1"></i> Settings
+            
+            <button onclick="toggleSettings()" class="text-gray-400 hover:text-white transition p-2">
+                <i class="fa-solid fa-gear text-xl"></i>
             </button>
         </div>
     </header>
 
+    <!-- Settings Modal -->
     <div id="settings-modal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
-        <div class="bg-gray-800 rounded-2xl w-full max-w-md p-6 shadow-2xl border border-gray-700 max-h-[90vh] overflow-y-auto">
-            <div class="flex justify-between items-center mb-6 border-b border-gray-700 pb-4">
-                <h2 class="text-xl font-bold text-white">Configuration</h2>
-                <button onclick="toggleSettings()" class="text-gray-400 hover:text-white"><i class="fa-solid fa-xmark text-2xl"></i></button>
+        <div class="bg-gray-800 rounded-2xl w-full max-w-md p-6 shadow-2xl border border-gray-700">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-xl font-bold text-white">Settings</h2>
+                <button onclick="toggleSettings()" class="text-gray-400 hover:text-white">
+                    <i class="fa-solid fa-xmark text-2xl"></i>
+                </button>
             </div>
 
-            <div class="space-y-6">
+            <div class="space-y-4">
                 <div>
-                    <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Gemini API Key</label>
-                    <input type="password" id="api-key-input" placeholder="Paste API Key here" class="w-full bg-gray-900 border border-gray-700 rounded-lg p-3 text-white focus:ring-2 focus:ring-violet-500 focus:outline-none text-sm">
+                    <label class="block text-sm font-medium text-gray-300 mb-2">Gemini API Key (Required)</label>
+                    <input type="password" id="api-key-input" placeholder="Paste your API key here..." 
+                        class="w-full bg-gray-900 border border-gray-700 rounded-lg p-3 text-white focus:ring-2 focus:ring-violet-500 focus:outline-none transition">
+                    <p class="text-xs text-gray-500 mt-2">
+                        Needed for high-quality translation. Get one at <a href="https://aistudio.google.com" target="_blank" class="text-violet-400 hover:underline">Google AI Studio</a>.
+                    </p>
                 </div>
 
-                <div>
-                    <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">Subtitle Style</label>
-                    
-                    <div class="grid grid-cols-2 gap-4 mb-4">
-                        <div>
-                            <label class="block text-xs text-gray-500 mb-1">Font Family</label>
-                            <select id="font-family-select" onchange="updateStyles()" class="w-full bg-gray-900 border border-gray-700 rounded-lg p-2 text-white text-sm focus:ring-violet-500">
-                                <option value="Roboto">Roboto (Clean)</option>
-                                <option value="Lora">Lora (Serif)</option>
-                                <option value="Montserrat">Montserrat (Bold)</option>
-                                <option value="Comic Neue">Comic (Casual)</option>
-                            </select>
-                        </div>
-                        <div>
-                            <label class="block text-xs text-gray-500 mb-1">Text Color</label>
-                            <div class="flex gap-2">
-                                <input type="color" id="font-color-input" value="#facc15" onchange="updateStyles()" class="h-9 w-12 bg-transparent border-0 cursor-pointer">
-                                <span class="text-xs text-gray-400 self-center">Pick Color</span>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="mb-4">
-                        <label class="block text-xs text-gray-500 mb-1">Font Size: <span id="font-size-val">32px</span></label>
-                        <input type="range" id="font-size-input" min="20" max="80" value="32" oninput="updateStyles()" class="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-violet-500">
-                    </div>
-
-                    <div class="flex items-center justify-between">
-                        <label class="text-sm text-gray-300">Add Text Shadow</label>
-                        <input type="checkbox" id="font-shadow-input" checked onchange="updateStyles()" class="w-5 h-5 accent-violet-500 rounded">
-                    </div>
+                <div class="pt-4 border-t border-gray-700">
+                    <label class="block text-sm font-medium text-gray-300 mb-2">Subtitle Size</label>
+                    <input type="range" id="font-size-slider" min="16" max="64" value="32" class="w-full accent-violet-500">
                 </div>
             </div>
 
-            <button onclick="saveSettings()" class="w-full mt-8 bg-violet-600 hover:bg-violet-700 text-white font-bold py-3 rounded-xl transition shadow-lg">
-                Save Changes
+            <button onclick="saveSettings()" class="w-full mt-6 bg-violet-600 hover:bg-violet-700 text-white font-bold py-3 rounded-xl transition shadow-lg">
+                Save & Close
             </button>
         </div>
     </div>
 
+    <!-- Main Content -->
     <main class="flex-grow flex flex-col items-center justify-start pt-6 pb-20 px-4 max-w-4xl mx-auto w-full">
 
-        <div class="w-full bg-gray-800/50 rounded-2xl p-6 border border-gray-700 shadow-xl backdrop-blur mb-6">
-            
-            <div class="flex flex-col md:flex-row gap-4 justify-between items-center mb-6">
-                <button id="record-btn" onclick="toggleRecording()" 
-                    class="w-full md:w-auto flex-1 flex items-center justify-center gap-3 bg-gray-700 hover:bg-gray-600 text-white font-semibold py-4 px-8 rounded-xl transition group shadow-lg border border-gray-600">
-                    <div id="record-indicator" class="w-3 h-3 rounded-full bg-red-500 transition-colors"></div>
-                    <span id="record-text" class="text-lg">Start Mic Listener</span>
-                </button>
+        <!-- Controls -->
+        <div class="controls-panel w-full bg-gray-800/50 rounded-2xl p-6 border border-gray-700 shadow-xl backdrop-blur mb-6">
+            <div class="flex flex-col sm:flex-row gap-4 justify-between items-center">
+                
+                <div class="flex items-center gap-4 w-full sm:w-auto">
+                    <button id="record-btn" onclick="toggleRecording()" 
+                        class="flex-1 sm:flex-none flex items-center justify-center gap-2 bg-gray-700 hover:bg-gray-600 text-white font-semibold py-3 px-6 rounded-xl transition group">
+                        <div id="record-indicator" class="w-3 h-3 rounded-full bg-red-500"></div>
+                        <span id="record-text">Start Listening</span>
+                    </button>
+                </div>
 
-                <div class="flex gap-3 w-full md:w-auto">
-                    <button onclick="clearHistory()" class="bg-gray-700 hover:bg-gray-600 text-gray-300 py-3 px-5 rounded-xl transition border border-gray-600" title="Clear History">
+                <div class="flex gap-3 w-full sm:w-auto">
+                    <button onclick="clearHistory()" class="flex-1 sm:flex-none bg-gray-700 hover:bg-gray-600 text-gray-300 py-3 px-4 rounded-xl transition" title="Clear History">
                         <i class="fa-solid fa-trash-can"></i>
                     </button>
-                    <button onclick="togglePiP()" id="pip-btn" class="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white py-3 px-6 rounded-xl transition shadow-md flex items-center justify-center gap-2 font-medium">
-                        <i class="fa-regular fa-window-restore"></i>
-                        <span>Pop-out Overlay</span>
+                    <button onclick="enterSubtitleMode()" class="flex-1 sm:flex-none bg-indigo-600 hover:bg-indigo-700 text-white py-3 px-6 rounded-xl transition shadow-md flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-expand"></i>
+                        <span>Subtitle Mode</span>
                     </button>
                 </div>
             </div>
-
-            <div class="bg-gray-900/50 rounded-xl p-4 border border-gray-700 flex flex-col sm:flex-row items-center justify-between gap-4">
-                <div class="flex items-center gap-3">
-                    <div class="bg-gray-800 p-2 rounded-lg text-violet-400">
-                        <i class="fa-solid fa-volume-high"></i>
-                    </div>
-                    <div>
-                        <h3 class="text-sm font-bold text-white">Application Audio</h3>
-                        <p class="text-xs text-gray-400">Capture tab audio for better clarity</p>
-                    </div>
-                </div>
-                
-                <div class="flex items-center gap-3 w-full sm:w-auto">
-                    <div id="audio-visualizer" class="hidden flex gap-1 h-5 items-end">
-                        <div class="audio-bar" style="animation-duration: 0.6s"></div>
-                        <div class="audio-bar" style="animation-duration: 0.4s"></div>
-                        <div class="audio-bar" style="animation-duration: 0.7s"></div>
-                        <div class="audio-bar" style="animation-duration: 0.5s"></div>
-                    </div>
-
-                    <button id="share-audio-btn" onclick="toggleTabAudio()" class="text-xs bg-gray-700 hover:bg-gray-600 text-white px-4 py-2 rounded-lg transition border border-gray-600 whitespace-nowrap">
-                        <i class="fa-solid fa-desktop mr-2"></i>Share Tab Audio
-                    </button>
-                </div>
-            </div>
-
-            <div class="mt-4 flex items-center gap-2 text-sm justify-between">
-                <div>
-                    <span class="text-gray-400">Status:</span>
-                    <span id="status-text" class="text-yellow-500 font-medium">Ready</span>
-                </div>
+            
+            <!-- Status Bar -->
+            <div class="mt-4 flex items-center gap-2 text-sm">
+                <span class="text-gray-400">Status:</span>
+                <span id="status-text" class="text-yellow-500 font-medium">Ready (Requires Mic)</span>
             </div>
         </div>
 
+        <!-- Live Transcript & Translation Area -->
         <div id="main-display" class="w-full space-y-6">
-            <div class="bg-black rounded-2xl p-6 border border-gray-800 min-h-[160px] flex flex-col justify-center items-center text-center shadow-2xl relative overflow-hidden group">
-                <div class="absolute top-2 left-3 text-[10px] font-bold text-gray-600 uppercase tracking-wider">Live Preview</div>
+            
+            <!-- Current Active Sentence -->
+            <div class="bg-gray-900 rounded-2xl p-6 border border-gray-800 min-h-[120px] flex flex-col justify-center items-center text-center shadow-inner relative overflow-hidden">
+                <div class="absolute top-2 left-3 text-xs font-bold text-gray-600 uppercase tracking-wider">Live Input</div>
                 
-                <div id="translation-loader" class="hidden absolute top-3 right-3 flex items-center gap-2">
-                    <span class="text-xs text-violet-400">Processing</span>
+                <!-- Korean Interim -->
+                <p id="interim-korean" class="korean-font text-gray-400 text-lg mb-2 opacity-80 min-h-[1.5em]">...</p>
+                
+                <!-- Loading Indicator for Translation -->
+                <div id="translation-loader" class="hidden absolute top-2 right-3">
                     <i class="fa-solid fa-circle-notch fa-spin text-violet-500"></i>
                 </div>
 
-                <p id="interim-korean" class="korean-font text-gray-500 text-lg mb-4 opacity-80 min-h-[1.5em] transition-all">...</p>
-                
-                <h2 id="live-english" class="transition-all leading-tight px-4" style="color: #facc15; font-size: 32px; font-family: Roboto, sans-serif;">
+                <!-- Latest Translation -->
+                <h2 id="live-english" class="text-2xl md:text-3xl font-bold text-yellow-400 leading-tight transition-all">
                     Waiting for speech...
                 </h2>
             </div>
 
-            <div class="w-full">
-                <h3 class="text-gray-400 text-sm font-bold uppercase tracking-wider mb-3 px-2">Recent Translations</h3>
+            <!-- History Log -->
+            <div class="controls-panel w-full">
+                <h3 class="text-gray-400 text-sm font-bold uppercase tracking-wider mb-3 px-2">History</h3>
                 <div id="history-log" class="bg-black/30 rounded-xl p-4 h-64 overflow-y-auto space-y-3 border border-gray-800/50 font-sans">
+                    <!-- History items will go here -->
                     <div class="text-center text-gray-600 py-10 italic">Translation history will appear here.</div>
                 </div>
             </div>
         </div>
 
-    </main>
+        <!-- Subtitle Container (For Fullscreen Mode) -->
+        <div id="subtitle-container" class="hidden">
+            <div id="subtitle-content" class="transition-all duration-300">
+                <p id="subtitle-korean" class="korean-font text-gray-500 text-xl mb-2 opacity-0 transition-opacity duration-300"></p>
+                <p id="subtitle-english" class="text-yellow-400 font-bold leading-tight subtitle-text">
+                    Listening...
+                </p>
+            </div>
+        </div>
+        
+        <!-- Exit Button for Subtitle Mode -->
+        <button onclick="exitSubtitleMode()" class="exit-btn hidden bg-white/20 hover:bg-white/40 backdrop-blur text-white rounded-full p-3 transition">
+            <i class="fa-solid fa-compress text-2xl"></i>
+        </button>
 
-    <canvas id="pip-canvas" width="800" height="300"></canvas>
-    <video id="pip-video" muted autoplay playsinline></video>
-    <audio id="tab-audio-player" controls></audio>
+    </main>
 
     <script>
         // --- Configuration & State ---
-        let apiKey = localStorage.getItem('gemini_api_key') || '';
+        // Key added per user request
+        let apiKey = localStorage.getItem('gemini_api_key') || 'AIzaSyDpeXO_hj9L_XVa8tNuzFN2JDzlAzx9lP4';
         if (apiKey) document.getElementById('api-key-input').value = apiKey;
-
-        // Visual Settings Defaults
-        let styleConfig = {
-            fontFamily: 'Roboto',
-            fontSize: '32',
-            color: '#facc15',
-            shadow: true
-        };
-
-        // Load saved styles if any
-        const savedStyles = localStorage.getItem('subs_styles');
-        if (savedStyles) {
-            styleConfig = JSON.parse(savedStyles);
-            // Apply to inputs
-            document.getElementById('font-family-select').value = styleConfig.fontFamily;
-            document.getElementById('font-size-input').value = styleConfig.fontSize;
-            document.getElementById('font-color-input').value = styleConfig.color;
-            document.getElementById('font-shadow-input').checked = styleConfig.shadow;
-            document.getElementById('font-size-val').innerText = styleConfig.fontSize + "px";
-        }
 
         let recognition;
         let isListening = false;
-        let currentKorean = "";
-        let currentEnglish = "Ready...";
+        let subtitleSize = 32;
         
-        // --- PiP Variables ---
-        const canvas = document.getElementById('pip-canvas');
-        const ctx = canvas.getContext('2d');
-        const video = document.getElementById('pip-video');
-        let isPipActive = false;
-
         // --- Elements ---
         const recordBtn = document.getElementById('record-btn');
         const recordIndicator = document.getElementById('record-indicator');
         const recordText = document.getElementById('record-text');
         const statusText = document.getElementById('status-text');
+        
         const interimKoreanEl = document.getElementById('interim-korean');
         const liveEnglishEl = document.getElementById('live-english');
         const historyLog = document.getElementById('history-log');
+        
+        const subtitleContainer = document.getElementById('subtitle-container');
+        const subtitleEnglish = document.getElementById('subtitle-english');
+        const subtitleKorean = document.getElementById('subtitle-korean'); // Hidden by default in sub mode usually
+
         const loader = document.getElementById('translation-loader');
-        const tabAudioPlayer = document.getElementById('tab-audio-player');
-        const visualizer = document.getElementById('audio-visualizer');
-        const shareAudioBtn = document.getElementById('share-audio-btn');
 
         // --- Initialization ---
         function initSpeechRecognition() {
             if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
-                alert("Browser not supported. Please use Google Chrome.");
+                alert("Your browser does not support Speech Recognition. Please use Google Chrome or Edge.");
+                statusText.innerText = "Browser Not Supported";
+                statusText.className = "text-red-500 font-medium";
                 return null;
             }
+
             const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
             const rec = new SpeechRecognition();
-            rec.continuous = true;
-            rec.interimResults = true;
-            rec.lang = 'ko-KR'; 
+            
+            rec.continuous = true; // Keep listening
+            rec.interimResults = true; // Show results as they are spoken
+            rec.lang = 'ko-KR'; // Korean
             
             rec.onstart = () => {
                 isListening = true;
                 updateUIState(true);
-                statusText.innerText = "Listening (Microphone)";
+                statusText.innerText = "Listening to Korean...";
                 statusText.className = "text-green-400 font-medium";
             };
 
             rec.onerror = (event) => {
-                if(event.error === 'no-speech') return;
-                console.error(event.error);
-                statusText.innerText = "Mic Error: " + event.error;
+                console.error("Speech Error:", event.error);
+                if (event.error === 'no-speech') {
+                    // Ignore no-speech errors, just a pause
+                    return;
+                }
+                statusText.innerText = `Error: ${event.error}`;
                 statusText.className = "text-red-500 font-medium";
                 isListening = false;
                 updateUIState(false);
             };
 
             rec.onend = () => {
-                if (isListening) rec.start(); 
-                else updateUIState(false);
+                // Auto-restart if it was supposed to be listening
+                if (isListening) {
+                    console.log("Restarting recognition...");
+                    try {
+                        rec.start();
+                    } catch(e) {
+                        isListening = false;
+                        updateUIState(false);
+                    }
+                } else {
+                    updateUIState(false);
+                    statusText.innerText = "Stopped";
+                    statusText.className = "text-yellow-500 font-medium";
+                }
             };
 
             rec.onresult = (event) => {
-                let finalTranscript = '';
                 let interimTranscript = '';
+                let finalTranscript = '';
 
                 for (let i = event.resultIndex; i < event.results.length; ++i) {
-                    if (event.results[i].isFinal) finalTranscript += event.results[i][0].transcript;
-                    else interimTranscript += event.results[i][0].transcript;
+                    if (event.results[i].isFinal) {
+                        finalTranscript += event.results[i][0].transcript;
+                    } else {
+                        interimTranscript += event.results[i][0].transcript;
+                    }
                 }
 
                 if (interimTranscript) {
                     interimKoreanEl.innerText = interimTranscript;
-                    currentKorean = interimTranscript;
-                    // Update PiP with Korean while waiting
-                    updatePiPDisplay(interimTranscript, currentEnglish, true);
+                    // Optional: Update subtitle mode interim (maybe in grey)
+                    // subtitleEnglish.innerText = "..."; 
                 }
 
                 if (finalTranscript) {
-                    interimKoreanEl.innerText = finalTranscript;
-                    handleTranslation(finalTranscript);
+                    interimKoreanEl.innerText = finalTranscript; // Show finalized Korean
+                    handleFinalTranscript(finalTranscript);
                 }
             };
+
             return rec;
         }
 
         recognition = initSpeechRecognition();
 
-        // Apply styles on load
-        updateStyles(); 
-        initCanvas(); // Start black canvas
-
-        // --- Visual Customization Functions ---
-
-        function updateStyles() {
-            // Get values from inputs
-            styleConfig.fontFamily = document.getElementById('font-family-select').value;
-            styleConfig.fontSize = document.getElementById('font-size-input').value;
-            styleConfig.color = document.getElementById('font-color-input').value;
-            styleConfig.shadow = document.getElementById('font-shadow-input').checked;
-
-            // Update Label
-            document.getElementById('font-size-val').innerText = styleConfig.fontSize + "px";
-
-            // Apply to Main Display
-            liveEnglishEl.style.fontFamily = styleConfig.fontFamily + ", sans-serif";
-            liveEnglishEl.style.fontSize = styleConfig.fontSize + "px";
-            liveEnglishEl.style.color = styleConfig.color;
-            
-            if (styleConfig.shadow) {
-                liveEnglishEl.style.textShadow = "2px 2px 4px #000000";
-            } else {
-                liveEnglishEl.style.textShadow = "none";
-            }
-
-            // Save to LocalStorage
-            localStorage.setItem('subs_styles', JSON.stringify(styleConfig));
-
-            // Refresh PiP
-            updatePiPDisplay(currentKorean, currentEnglish, false);
-        }
-
-        // --- Core Translation Logic ---
+        // --- Core Logic ---
 
         function toggleRecording() {
             if (!recognition) return;
+
             if (isListening) {
                 isListening = false;
                 recognition.stop();
-                statusText.innerText = "Stopped";
-                statusText.className = "text-yellow-500 font-medium";
             } else {
-                if (!apiKey) { toggleSettings(); alert("Please enter your API Key in settings."); return; }
-                try { recognition.start(); } catch(e) { console.log("Already started"); }
+                // Check API Key
+                if (!apiKey) {
+                    toggleSettings();
+                    alert("Please enter your Gemini API Key first to enable translation.");
+                    return;
+                }
+                try {
+                    recognition.start();
+                    isListening = true; // Set flag immediately
+                } catch (e) {
+                    console.error(e);
+                }
             }
         }
 
-        async function handleTranslation(koreanText) {
-            loader.classList.remove('hidden');
-            currentKorean = koreanText;
-            updatePiPDisplay(koreanText, "Translating...", true);
+        function updateUIState(listening) {
+            if (listening) {
+                recordBtn.classList.replace('bg-gray-700', 'bg-red-600');
+                recordBtn.classList.replace('hover:bg-gray-600', 'hover:bg-red-700');
+                recordIndicator.classList.add('recording-pulse');
+                recordIndicator.classList.replace('bg-red-500', 'bg-white');
+                recordText.innerText = "Stop Listening";
+            } else {
+                recordBtn.classList.replace('bg-red-600', 'bg-gray-700');
+                recordBtn.classList.replace('hover:bg-red-700', 'hover:bg-gray-600');
+                recordIndicator.classList.remove('recording-pulse');
+                recordIndicator.classList.replace('bg-white', 'bg-red-500');
+                recordText.innerText = "Start Listening";
+            }
+        }
 
-            const translated = await translateWithGemini(koreanText);
+        async function handleFinalTranscript(koreanText) {
+            // Show loader
+            loader.classList.remove('hidden');
             
+            // 1. Translate
+            const englishText = await translateWithGemini(koreanText);
+            
+            // 2. Update UI
             loader.classList.add('hidden');
-            currentEnglish = translated;
-            liveEnglishEl.innerText = translated;
-            
-            addToHistory(koreanText, translated);
-            updatePiPDisplay(koreanText, translated, false);
+            updateDisplay(koreanText, englishText);
         }
 
         async function translateWithGemini(text) {
-            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
-            const prompt = `Translate Korean to English subtitles. Keep it concise. No notes. Input: "${text}"`;
+            if (!apiKey) return "[Missing API Key]";
+
+            const prompt = `Translate this Korean text from a movie/drama to concise, natural English subtitles. Do not include notes, just the translation: "${text}"`;
+            
+            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
 
             try {
                 const response = await fetch(url, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
+                    body: JSON.stringify({
+                        contents: [{ parts: [{ text: prompt }] }]
+                    })
                 });
+
                 const data = await response.json();
-                return data.candidates?.[0]?.content?.parts?.[0]?.text || "...";
-            } catch (e) {
-                console.error(e);
-                return "Error";
-            }
-        }
-
-        // --- Tab Audio Loopback Logic ---
-        // This allows capturing a tab (Netflix/YouTube) and ensuring the audio is available to the system
-        
-        async function toggleTabAudio() {
-            if (!tabAudioPlayer.srcObject) {
-                try {
-                    const stream = await navigator.mediaDevices.getDisplayMedia({
-                        video: true, // Chrome often requires video to get audio in getDisplayMedia
-                        audio: true
-                    });
-                    
-                    // We only need the audio
-                    const audioStream = new MediaStream(stream.getAudioTracks());
-                    
-                    if (audioStream.getAudioTracks().length === 0) {
-                        alert("No audio captured. Please make sure to check 'Share Audio' in the popup.");
-                        return;
-                    }
-
-                    tabAudioPlayer.srcObject = audioStream;
-                    tabAudioPlayer.play();
-                    
-                    // UI Updates
-                    visualizer.classList.remove('hidden');
-                    visualizer.classList.add('flex');
-                    shareAudioBtn.classList.replace('bg-gray-700', 'bg-red-600');
-                    shareAudioBtn.innerHTML = '<i class="fa-solid fa-stop mr-2"></i>Stop Tab Audio';
-                    
-                    statusText.innerText = "Tab Audio Active (Monitoring)";
-
-                    // Stop logic when user stops sharing via browser UI
-                    stream.getVideoTracks()[0].onended = () => stopTabAudio();
-
-                } catch (err) {
-                    console.error("Error sharing audio:", err);
-                    alert("Could not capture audio. Please try again.");
+                
+                if (data.error) {
+                    console.error("Gemini Error:", data.error);
+                    return "[Translation Error]";
                 }
-            } else {
-                stopTabAudio();
+
+                return data.candidates?.[0]?.content?.parts?.[0]?.text || "[No Translation]";
+
+            } catch (error) {
+                console.error("Network Error:", error);
+                return "[Network Error]";
             }
         }
 
-        function stopTabAudio() {
-            if (tabAudioPlayer.srcObject) {
-                const tracks = tabAudioPlayer.srcObject.getTracks();
-                tracks.forEach(t => t.stop());
-                tabAudioPlayer.srcObject = null;
-            }
-            visualizer.classList.add('hidden');
-            visualizer.classList.remove('flex');
-            shareAudioBtn.classList.replace('bg-red-600', 'bg-gray-700');
-            shareAudioBtn.innerHTML = '<i class="fa-solid fa-desktop mr-2"></i>Share Tab Audio';
-            statusText.innerText = "Ready";
-        }
-
-        // --- Picture-in-Picture & Canvas Logic ---
-
-        function initCanvas() {
-            ctx.fillStyle = "black";
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-            ctx.font = "30px Roboto";
-            ctx.fillStyle = "#555";
-            ctx.textAlign = "center";
-            ctx.fillText("Subtitles Ready", canvas.width/2, canvas.height/2);
+        function updateDisplay(korean, english) {
+            // Main Display
+            liveEnglishEl.innerText = english;
             
-            const stream = canvas.captureStream(30);
-            video.srcObject = stream;
-            video.play();
-        }
-
-        async function togglePiP() {
-            try {
-                if (document.pictureInPictureElement) {
-                    await document.exitPictureInPicture();
-                    isPipActive = false;
-                } else {
-                    await video.requestPictureInPicture();
-                    isPipActive = true;
-                }
-            } catch (err) {
-                alert("PiP Error: " + err);
-            }
-        }
-
-        function updatePiPDisplay(korean, english, isPending) {
-            // Background
-            ctx.clearRect(0,0, canvas.width, canvas.height);
-            ctx.fillStyle = "rgba(0, 0, 0, 0.85)"; // Semi-transparent black
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-            // 1. Draw Korean (Small, Top)
-            ctx.shadowBlur = 0;
-            ctx.font = "24px 'Noto Sans KR', sans-serif";
-            ctx.fillStyle = "#888888";
-            ctx.textAlign = "center";
-            ctx.fillText(korean.substring(0, 60) + (korean.length>60?"...":""), canvas.width/2, 50);
-
-            // 2. Draw English (Using Settings)
-            // Configure Font
-            let fontStr = "";
-            if (styleConfig.fontFamily === 'Montserrat') fontStr += "bold ";
-            // Scale font size slightly for canvas resolution (canvas is 800px wide)
-            const scaledSize = parseInt(styleConfig.fontSize) + 10; 
-            fontStr += `${scaledSize}px ${styleConfig.fontFamily}, sans-serif`;
+            // Subtitle Mode Display
+            subtitleEnglish.innerText = english;
+            subtitleKorean.innerText = korean; // Can enable if user wants dual subs
             
-            ctx.font = fontStr;
-            ctx.fillStyle = isPending ? "#a78bfa" : styleConfig.color;
-            
-            // Configure Shadow
-            if (styleConfig.shadow) {
-                ctx.shadowColor = "black";
-                ctx.shadowBlur = 4;
-                ctx.shadowOffsetX = 2;
-                ctx.shadowOffsetY = 2;
-            } else {
-                ctx.shadowColor = "transparent";
-            }
-
-            // Word Wrap Logic
-            wrapText(ctx, english, canvas.width/2, 120, 750, scaledSize + 10);
-        }
-
-        function wrapText(context, text, x, y, maxWidth, lineHeight) {
-            let words = text.split(' ');
-            let line = '';
-            let lines = [];
-
-            for(let n = 0; n < words.length; n++) {
-                let testLine = line + words[n] + ' ';
-                let metrics = context.measureText(testLine);
-                let testWidth = metrics.width;
-                if (testWidth > maxWidth && n > 0) {
-                    lines.push(line);
-                    line = words[n] + ' ';
-                } else {
-                    line = testLine;
-                }
-            }
-            lines.push(line);
-
-            // Draw lines
-            for(let k=0; k<lines.length; k++) {
-               context.fillText(lines[k], x, y + (k*lineHeight));
-            }
-        }
-
-        // --- Helper UI Functions ---
-
-        function updateUIState(listening) {
-            if (listening) {
-                recordBtn.classList.replace('bg-gray-700', 'bg-red-600');
-                recordIndicator.classList.add('recording-pulse');
-                recordIndicator.classList.replace('bg-red-500', 'bg-white');
-                recordText.innerText = "Stop Listener";
-            } else {
-                recordBtn.classList.replace('bg-red-600', 'bg-gray-700');
-                recordIndicator.classList.remove('recording-pulse');
-                recordIndicator.classList.replace('bg-white', 'bg-red-500');
-                recordText.innerText = "Start Mic Listener";
-            }
+            // History
+            addToHistory(korean, english);
         }
 
         function addToHistory(korean, english) {
-            if (historyLog.querySelector('.italic')) historyLog.innerHTML = '';
+            // Remove placeholder if exists
+            if (historyLog.querySelector('.italic')) {
+                historyLog.innerHTML = '';
+            }
+
             const item = document.createElement('div');
             item.className = "bg-gray-800 p-3 rounded-lg border-l-4 border-violet-500 animate-[fadeIn_0.5s_ease-out]";
-            item.innerHTML = `<p class="text-xs text-gray-500 mb-1 korean-font">${korean}</p><p class="text-white font-medium">${english}</p>`;
+            item.innerHTML = `
+                <p class="text-xs text-gray-500 mb-1 korean-font">${korean}</p>
+                <p class="text-white font-medium">${english}</p>
+            `;
+            
             historyLog.insertBefore(item, historyLog.firstChild);
         }
 
         function clearHistory() {
             historyLog.innerHTML = '<div class="text-center text-gray-600 py-10 italic">Translation history will appear here.</div>';
-            liveEnglishEl.innerText = "Waiting...";
-            currentEnglish = "Waiting...";
-            updatePiPDisplay("", "Waiting...", false);
+            liveEnglishEl.innerText = "Waiting for speech...";
+            interimKoreanEl.innerText = "...";
+            subtitleEnglish.innerText = "Listening...";
         }
 
+        // --- Settings & Modes ---
+
         function toggleSettings() {
-            document.getElementById('settings-modal').classList.toggle('hidden');
+            const modal = document.getElementById('settings-modal');
+            modal.classList.toggle('hidden');
         }
 
         function saveSettings() {
             const input = document.getElementById('api-key-input');
             apiKey = input.value.trim();
             localStorage.setItem('gemini_api_key', apiKey);
-            updateStyles();
+            
+            // Update Font Size
+            const slider = document.getElementById('font-size-slider');
+            subtitleSize = slider.value;
+            subtitleEnglish.style.fontSize = subtitleSize + "px";
+            
             toggleSettings();
         }
+
+        function enterSubtitleMode() {
+            document.body.classList.add('subtitle-mode');
+            document.getElementById('subtitle-container').classList.remove('hidden');
+            document.querySelector('.exit-btn').classList.remove('hidden');
+            
+            // Request full screen for immersive feel
+            // We use .catch() here because requestFullscreen returns a Promise
+            // which rejects if the permission policy (iframe) disallows it.
+            if (document.documentElement.requestFullscreen) {
+                document.documentElement.requestFullscreen().catch(e => {
+                    console.warn("Fullscreen blocked or not supported:", e);
+                    // No need to alert user; the CSS mode still works fine.
+                });
+            }
+        }
+
+        function exitSubtitleMode() {
+            document.body.classList.remove('subtitle-mode');
+            document.getElementById('subtitle-container').classList.add('hidden');
+            document.querySelector('.exit-btn').classList.add('hidden');
+            
+            if (document.exitFullscreen && document.fullscreenElement) {
+                document.exitFullscreen().catch(e => console.warn("Exit fullscreen failed:", e));
+            }
+        }
+
+        // Slider listener
+        document.getElementById('font-size-slider').addEventListener('input', (e) => {
+            subtitleSize = e.target.value;
+            subtitleEnglish.style.fontSize = subtitleSize + "px";
+        });
 
     </script>
 </body>
