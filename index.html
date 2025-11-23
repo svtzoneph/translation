@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>K-Drama Live Subtitles</title>
+    <title>K-Live Subs (PiP)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
@@ -21,74 +21,21 @@
             font-family: 'Noto Sans KR', sans-serif;
         }
 
-        /* Subtitle Mode Styles (Full Screen Black) */
-        body.subtitle-mode {
-            background-color: #000000;
-        }
+        /* Subtitle Mode Styles */
+        body.subtitle-mode { background-color: #000000; }
         body.subtitle-mode .controls-panel,
         body.subtitle-mode .header-area,
-        body.subtitle-mode #capsule-window {
-            display: none !important;
-        }
+        body.subtitle-mode #capsule-window { display: none !important; }
         body.subtitle-mode #subtitle-container {
-            position: fixed;
-            bottom: 10%;
-            left: 5%;
-            right: 5%;
-            text-align: center;
-            display: flex;
-            flex-direction: column;
-            justify-content: flex-end;
-            height: 80vh;
-            pointer-events: none;
+            position: fixed; bottom: 10%; left: 5%; right: 5%;
+            text-align: center; display: flex; flex-direction: column;
+            justify-content: flex-end; height: 80vh; pointer-events: none;
         }
         body.subtitle-mode .exit-btn {
-            display: block;
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            z-index: 50;
-            pointer-events: auto;
-            opacity: 0.3;
+            display: block; position: fixed; top: 20px; right: 20px;
+            z-index: 50; pointer-events: auto; opacity: 0.3;
         }
         body.subtitle-mode .exit-btn:hover { opacity: 1; }
-
-        /* Mini Capsule Mode Styles */
-        body.mini-mode {
-            background-color: transparent;
-            overflow: hidden;
-        }
-        body.mini-mode .controls-panel,
-        body.mini-mode .header-area,
-        body.mini-mode #main-display,
-        body.mini-mode #subtitle-container {
-            display: none !important;
-        }
-        
-        #capsule-window {
-            display: none;
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            width: 300px;
-            min-height: 100px;
-            background-color: rgba(0, 0, 0, 0.85);
-            backdrop-filter: blur(8px);
-            border-radius: 20px;
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            padding: 16px;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.5);
-            z-index: 100;
-            cursor: move;
-            transition: width 0.2s, height 0.2s;
-            resize: both;
-            overflow: auto;
-        }
-        
-        body.mini-mode #capsule-window {
-            display: flex;
-            flex-direction: column;
-        }
 
         /* Animations */
         @keyframes pulse-ring {
@@ -96,24 +43,23 @@
             70% { transform: scale(1); box-shadow: 0 0 0 10px rgba(239, 68, 68, 0); }
             100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
         }
-
-        .recording-pulse {
-            animation: pulse-ring 2s infinite;
-        }
-
-        .subtitle-text {
-            text-shadow: 2px 2px 4px rgba(0,0,0,0.8);
-        }
-        
-        /* Scrollbar for log */
-        ::-webkit-scrollbar { width: 8px; }
-        ::-webkit-scrollbar-track { background: #2d2d2d; }
-        ::-webkit-scrollbar-thumb { background: #555; border-radius: 4px; }
+        .recording-pulse { animation: pulse-ring 2s infinite; }
         
         .mode-btn.active {
-            background-color: #7c3aed; /* violet-600 */
-            color: white;
-            border-color: #7c3aed;
+            background-color: #7c3aed; color: white; border-color: #7c3aed;
+        }
+
+        /* Standard Subtitle Style for Main Display */
+        .subtitle-style {
+            color: #FFD700; /* Gold/Yellow */
+            text-shadow: 
+                -2px -2px 0 #000,  
+                 2px -2px 0 #000,
+                -2px  2px 0 #000,
+                 2px  2px 0 #000,
+                 4px 4px 8px rgba(0,0,0,0.9);
+            font-weight: 800;
+            letter-spacing: 0.5px;
         }
     </style>
 </head>
@@ -124,17 +70,17 @@
         <div class="max-w-4xl mx-auto flex justify-between items-center">
             <div class="flex items-center gap-3">
                 <div class="bg-gradient-to-r from-pink-500 to-violet-600 w-10 h-10 rounded-lg flex items-center justify-center text-white font-bold text-xl shadow-lg">
-                    <i class="fa-solid fa-language"></i>
+                    <i class="fa-solid fa-closed-captioning"></i>
                 </div>
                 <div>
                     <h1 class="font-bold text-xl text-white tracking-tight">K-Live Subs</h1>
-                    <p class="text-xs text-gray-400">Speech & System Audio</p>
+                    <p class="text-xs text-gray-400">Pop-out Translator</p>
                 </div>
             </div>
             
             <div class="flex items-center gap-2">
-                <button onclick="toggleMiniMode()" class="text-gray-400 hover:text-white transition p-2" title="Mini Capsule Mode">
-                    <i class="fa-solid fa-window-restore text-xl"></i>
+                <button onclick="togglePiP()" class="bg-violet-600 hover:bg-violet-700 text-white px-3 py-1.5 rounded-lg text-sm font-bold transition flex items-center gap-2" title="Pop-out Floating Window (Works over other tabs!)">
+                    <i class="fa-solid fa-arrow-up-right-from-square"></i> Pop-out
                 </button>
                 <button onclick="toggleSettings()" class="text-gray-400 hover:text-white transition p-2">
                     <i class="fa-solid fa-gear text-xl"></i>
@@ -152,7 +98,6 @@
                     <i class="fa-solid fa-xmark text-2xl"></i>
                 </button>
             </div>
-
             <div class="space-y-4">
                 <div>
                     <label class="block text-sm font-medium text-gray-300 mb-2">Gemini API Key</label>
@@ -165,12 +110,7 @@
                         <input type="checkbox" id="fast-mode-check" checked class="w-4 h-4 accent-violet-500">
                     </div>
                 </div>
-                <div class="pt-4 border-t border-gray-700">
-                    <label class="block text-sm font-medium text-gray-300 mb-2">Subtitle Size</label>
-                    <input type="range" id="font-size-slider" min="16" max="64" value="32" class="w-full accent-violet-500">
-                </div>
             </div>
-
             <button onclick="saveSettings()" class="w-full mt-6 bg-violet-600 hover:bg-violet-700 text-white font-bold py-3 rounded-xl transition shadow-lg">
                 Save & Close
             </button>
@@ -194,7 +134,6 @@
             </div>
 
             <div class="flex flex-col sm:flex-row gap-4 justify-between items-center">
-                
                 <div class="flex items-center gap-4 w-full sm:w-auto">
                     <button id="record-btn" onclick="toggleProcessing()" 
                         class="flex-1 sm:flex-none flex items-center justify-center gap-2 bg-gray-700 hover:bg-gray-600 text-white font-semibold py-3 px-6 rounded-xl transition group">
@@ -202,7 +141,6 @@
                         <span id="record-text">Start Listening</span>
                     </button>
                 </div>
-
                 <div class="flex gap-3 w-full sm:w-auto">
                     <button onclick="clearHistory()" class="flex-1 sm:flex-none bg-gray-700 hover:bg-gray-600 text-gray-300 py-3 px-4 rounded-xl transition" title="Clear History">
                         <i class="fa-solid fa-trash-can"></i>
@@ -220,8 +158,9 @@
                     <span class="text-gray-400">Status:</span>
                     <span id="status-text" class="text-yellow-500 font-medium">Ready</span>
                 </div>
-                <div id="system-audio-hint" class="hidden text-xs text-gray-500 mt-1">
-                    <i class="fa-solid fa-info-circle mr-1"></i> Use "System Audio" to capture movie sound directly. Select the movie tab and check "Share Audio".
+                <div id="system-audio-hint" class="hidden text-xs text-gray-400 bg-gray-800 p-2 rounded border border-gray-600 mt-2">
+                    <i class="fa-solid fa-circle-exclamation text-yellow-500 mr-1"></i> 
+                    <strong>Important:</strong> When the browser popup appears, switch to the "Tab" option, select your movie tab, and <strong>CHECK "Share Audio"</strong>.
                 </div>
             </div>
         </div>
@@ -230,19 +169,19 @@
         <div id="main-display" class="w-full space-y-6">
             
             <!-- Current Active Sentence -->
-            <div class="bg-gray-900 rounded-2xl p-6 border border-gray-800 min-h-[120px] flex flex-col justify-center items-center text-center shadow-inner relative overflow-hidden">
-                <div class="absolute top-2 left-3 text-xs font-bold text-gray-600 uppercase tracking-wider">Live Input</div>
+            <div class="bg-black rounded-2xl p-8 border border-gray-800 min-h-[160px] flex flex-col justify-center items-center text-center shadow-2xl relative overflow-hidden">
+                <div class="absolute top-3 left-4 text-xs font-bold text-gray-600 uppercase tracking-wider">Live Preview</div>
                 
                 <!-- Korean Interim -->
-                <p id="interim-korean" class="korean-font text-gray-400 text-lg mb-2 opacity-80 min-h-[1.5em]">...</p>
+                <p id="interim-korean" class="korean-font text-gray-500 text-lg mb-4 opacity-80 min-h-[1.5em]">...</p>
                 
                 <!-- Loading Indicator -->
-                <div id="translation-loader" class="hidden absolute top-2 right-3">
+                <div id="translation-loader" class="hidden absolute top-3 right-4">
                     <i class="fa-solid fa-circle-notch fa-spin text-violet-500"></i>
                 </div>
 
                 <!-- Latest Translation -->
-                <h2 id="live-english" class="text-2xl md:text-3xl font-bold text-yellow-400 leading-tight transition-all">
+                <h2 id="live-english" class="text-3xl md:text-4xl subtitle-style leading-snug transition-all">
                     Waiting for audio...
                 </h2>
             </div>
@@ -260,7 +199,7 @@
         <div id="subtitle-container" class="hidden">
             <div id="subtitle-content" class="transition-all duration-300">
                 <p id="subtitle-korean" class="korean-font text-gray-500 text-xl mb-2 opacity-0 transition-opacity duration-300"></p>
-                <p id="subtitle-english" class="text-yellow-400 font-bold leading-tight subtitle-text">
+                <p id="subtitle-english" class="subtitle-style text-4xl leading-tight">
                     Listening...
                 </p>
             </div>
@@ -271,23 +210,9 @@
             <i class="fa-solid fa-compress text-2xl"></i>
         </button>
 
-        <!-- Mini Capsule Window -->
-        <div id="capsule-window">
-            <div class="flex justify-between items-center mb-2 cursor-move handle">
-                <div class="flex items-center gap-2">
-                    <div class="w-2 h-2 rounded-full bg-red-500" id="mini-indicator"></div>
-                    <span class="text-xs text-gray-400 font-bold uppercase tracking-widest">Live Cap</span>
-                </div>
-                <button onclick="exitMiniMode()" class="text-white/50 hover:text-white">
-                    <i class="fa-solid fa-xmark"></i>
-                </button>
-            </div>
-            <div class="flex-grow flex items-center justify-center text-center">
-                <p id="capsule-text" class="text-yellow-300 font-bold text-lg leading-snug">
-                    Translation will appear here...
-                </p>
-            </div>
-        </div>
+        <!-- Hidden Elements for PiP Magic -->
+        <canvas id="pip-canvas" width="600" height="150" class="hidden"></canvas>
+        <video id="pip-video" class="hidden" muted autoplay playsinline></video>
 
     </main>
 
@@ -302,11 +227,10 @@
         let systemStream;
         
         let isProcessing = false;
-        let currentMode = 'mic'; // 'mic' or 'system'
-        let subtitleSize = 32;
+        let currentMode = 'mic';
         let fastMode = true;
 
-        // Predictive State (Mic Mode)
+        // Predictive State
         let interimTimeout = null;
         let lastTranslatedText = "";
 
@@ -320,17 +244,21 @@
         const historyLog = document.getElementById('history-log');
         const subtitleEnglish = document.getElementById('subtitle-english');
         const subtitleKorean = document.getElementById('subtitle-korean');
-        const capsuleText = document.getElementById('capsule-text');
-        const miniIndicator = document.getElementById('mini-indicator');
         const loader = document.getElementById('translation-loader');
         const btnMic = document.getElementById('btn-mic-mode');
         const btnSys = document.getElementById('btn-sys-mode');
         const systemHint = document.getElementById('system-audio-hint');
 
+        // PiP Elements
+        const pipCanvas = document.getElementById('pip-canvas');
+        const pipCtx = pipCanvas.getContext('2d');
+        const pipVideo = document.getElementById('pip-video');
+        let pipActive = false;
+
         // --- Mode Switching ---
 
         function setMode(mode) {
-            if (isProcessing) toggleProcessing(); // Stop current session
+            if (isProcessing) toggleProcessing();
             currentMode = mode;
             
             if (mode === 'mic') {
@@ -347,14 +275,11 @@
         }
 
         function toggleProcessing() {
-            if (currentMode === 'mic') {
-                toggleMicRecording();
-            } else {
-                toggleSystemAudioRecording();
-            }
+            if (currentMode === 'mic') toggleMicRecording();
+            else toggleSystemAudioRecording();
         }
 
-        // --- Microphone Logic (Web Speech API) ---
+        // --- Microphone Logic ---
 
         function initSpeechRecognition() {
             if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) return null;
@@ -380,10 +305,7 @@
                 if (isProcessing && currentMode === 'mic') {
                     try { rec.start(); } catch(e) { isProcessing = false; updateUIState(false); }
                 } else {
-                    if(currentMode === 'mic') {
-                        isProcessing = false; 
-                        updateUIState(false);
-                    }
+                    if(currentMode === 'mic') { isProcessing = false; updateUIState(false); }
                 }
             };
             rec.onresult = (event) => {
@@ -426,11 +348,10 @@
             }
         }
 
-        // --- System Audio Logic (Gemini Audio) ---
+        // --- System Audio Logic ---
 
         async function toggleSystemAudioRecording() {
             if (isProcessing) {
-                // Stop Logic
                 isProcessing = false;
                 updateUIState(false);
                 if (mediaRecorder && mediaRecorder.state !== 'inactive') mediaRecorder.stop();
@@ -440,24 +361,21 @@
                 return;
             }
 
-            // Start Logic
             if (!apiKey) { toggleSettings(); alert("API Key Required"); return; }
 
             try {
-                // Request Screen/Tab with Audio
                 systemStream = await navigator.mediaDevices.getDisplayMedia({
-                    video: { width: 1, height: 1 }, // Minimal video to save bandwidth
-                    audio: true
+                    video: { width: 1, height: 1 },
+                    audio: true,
+                    selfBrowserSurface: "exclude" 
                 });
                 
-                // Check if user actually shared audio
                 if (systemStream.getAudioTracks().length === 0) {
-                    alert("No audio track found. Please ensure you checked 'Share Audio' in the popup.");
+                    alert("Capture Cancelled: You did not check the 'Share Audio' box. Please try again.");
                     systemStream.getTracks().forEach(track => track.stop());
                     return;
                 }
 
-                // Handle user clicking "Stop Sharing" in browser UI
                 systemStream.getVideoTracks()[0].onended = () => {
                     if(isProcessing) toggleSystemAudioRecording();
                 };
@@ -465,12 +383,17 @@
                 startMediaRecorder();
                 isProcessing = true;
                 updateUIState(true);
-                statusText.innerText = "Capturing System Audio (Chunks every 4s)...";
+                statusText.innerText = "Capturing System Audio...";
                 statusText.className = "text-blue-400 font-medium";
 
             } catch (err) {
                 console.error(err);
-                statusText.innerText = "Capture Cancelled";
+                if (err.name === 'NotAllowedError') {
+                    statusText.innerText = "Permission Denied";
+                    alert("Capture Cancelled. You clicked Cancel or didn't select a screen.");
+                } else {
+                    statusText.innerText = "Capture Error";
+                }
                 statusText.className = "text-red-500";
             }
         }
@@ -481,20 +404,12 @@
                 alert("Browser doesn't support audio/webm");
                 return;
             }
-
             mediaRecorder = new MediaRecorder(systemStream, { mimeType });
-            
             mediaRecorder.ondataavailable = async (e) => {
-                if (e.data.size > 0) {
-                    // Process chunk
-                    handleAudioTranslation(e.data);
-                }
+                if (e.data.size > 0) handleAudioTranslation(e.data);
             };
-
-            // Restart recorder every 4 seconds to create manageable chunks for the API
             mediaRecorder.start();
             
-            // Loop logic: stop and restart every 4 seconds
             const loopInterval = setInterval(() => {
                 if (!isProcessing || mediaRecorder.state === 'inactive') {
                     clearInterval(loopInterval);
@@ -517,19 +432,14 @@
 
         async function handleAudioTranslation(audioBlob) {
             loader.classList.remove('hidden');
-            interimKoreanEl.innerText = "(Processing Audio Chunk...)";
-            
+            interimKoreanEl.innerText = "(Processing...)";
             const base64Audio = await blobToBase64(audioBlob);
             const result = await callGeminiAudio(base64Audio);
-            
             loader.classList.add('hidden');
-            
-            if (result && result.english) {
-                updateDisplay(result.korean, result.english);
-            }
+            if (result && result.english) updateDisplay(result.korean, result.english);
         }
 
-        // --- API Calls ---
+        // --- API Calls (Gemini) ---
 
         async function callGeminiText(text) {
             const prompt = `Translate this Korean text to concise English subtitles: "${text}"`;
@@ -537,11 +447,9 @@
         }
 
         async function callGeminiAudio(base64Data) {
-            // Updated Prompt for Audio
             const prompt = `Transcribe the Korean audio to Korean text, and then translate it to English. 
             Return a JSON object with keys "korean" and "english". 
-            If no speech is detected, return empty strings.
-            Example: {"korean": "안녕하세요", "english": "Hello"}`;
+            If no speech is detected, return empty strings. Example: {"korean": "안녕하세요", "english": "Hello"}`;
             
             const payload = {
                 contents: [{
@@ -552,23 +460,14 @@
                 }],
                 generationConfig: { responseMimeType: "application/json" }
             };
-            
             const responseText = await sendToGemini(payload, true);
             if (!responseText) return null;
-
-            try {
-                return JSON.parse(responseText);
-            } catch (e) {
-                console.error("JSON Parse Error", e);
-                return null;
-            }
+            try { return JSON.parse(responseText); } catch (e) { return null; }
         }
 
         async function sendToGemini(payloadOrContents, isFullPayload = false) {
             const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
-            
             const body = isFullPayload ? payloadOrContents : { contents: payloadOrContents };
-
             try {
                 const response = await fetch(url, {
                     method: 'POST',
@@ -577,61 +476,48 @@
                 });
                 const data = await response.json();
                 return data.candidates?.[0]?.content?.parts?.[0]?.text || "";
-            } catch (error) {
-                console.error(error);
-                return "";
-            }
+            } catch (error) { return ""; }
         }
 
         function blobToBase64(blob) {
-            return new Promise((resolve, reject) => {
+            return new Promise((resolve) => {
                 const reader = new FileReader();
                 reader.readAsDataURL(blob);
-                reader.onloadend = () => {
-                    const base64data = reader.result.split(',')[1];
-                    resolve(base64data);
-                };
-                reader.onerror = reject;
+                reader.onloadend = () => resolve(reader.result.split(',')[1]);
             });
         }
 
         // --- UI Updates ---
 
         function updateUIState(active) {
-            const btn = document.getElementById('record-btn');
             if (active) {
-                btn.classList.replace('bg-gray-700', 'bg-red-600');
-                btn.classList.replace('hover:bg-gray-600', 'hover:bg-red-700');
+                recordBtn.classList.replace('bg-gray-700', 'bg-red-600');
+                recordBtn.classList.replace('hover:bg-gray-600', 'hover:bg-red-700');
                 recordIndicator.classList.add('recording-pulse');
                 recordIndicator.classList.replace('bg-red-500', 'bg-white');
                 recordText.innerText = "Stop";
-                miniIndicator.classList.replace('bg-red-500', 'bg-green-500');
             } else {
-                btn.classList.replace('bg-red-600', 'bg-gray-700');
-                btn.classList.replace('hover:bg-red-700', 'hover:bg-gray-600');
+                recordBtn.classList.replace('bg-red-600', 'bg-gray-700');
+                recordBtn.classList.replace('hover:bg-red-700', 'hover:bg-gray-600');
                 recordIndicator.classList.remove('recording-pulse');
                 recordIndicator.classList.replace('bg-white', 'bg-red-500');
                 recordText.innerText = currentMode === 'mic' ? "Start Microphone" : "Capture System Audio";
-                miniIndicator.classList.replace('bg-green-500', 'bg-red-500');
             }
         }
 
         function updateDisplay(korean, english) {
             if (!english || english.trim() === "") return;
-            
             liveEnglishEl.innerText = english;
             subtitleEnglish.innerText = english;
             subtitleKorean.innerText = korean;
-            capsuleText.innerText = english;
             interimKoreanEl.innerText = korean;
-            
             addToHistory(korean, english);
+            updatePiPCanvas(english); // Update the floating window
         }
 
         function addToHistory(korean, english) {
             if (historyLog.firstChild && historyLog.firstChild.dataset && historyLog.firstChild.dataset.ko === korean) return;
             if (historyLog.querySelector('.italic')) historyLog.innerHTML = '';
-
             const item = document.createElement('div');
             item.dataset.ko = korean;
             item.className = "bg-gray-800 p-3 rounded-lg border-l-4 border-violet-500 animate-[fadeIn_0.5s_ease-out]";
@@ -645,18 +531,93 @@
         function clearHistory() {
             historyLog.innerHTML = '<div class="text-center text-gray-600 py-10 italic">Translation history will appear here.</div>';
             liveEnglishEl.innerText = "Waiting...";
-            capsuleText.innerText = "Waiting...";
+            updatePiPCanvas("Waiting...");
         }
 
-        // --- Settings & Modes (Same as before) ---
+        // --- Picture-in-Picture (Pop-out) Logic ---
+
+        function updatePiPCanvas(text) {
+            if (!pipActive && pipVideo.paused) return; // Save resources if not used
+
+            // Clear Background (Black)
+            pipCtx.fillStyle = "black";
+            pipCtx.fillRect(0, 0, pipCanvas.width, pipCanvas.height);
+
+            // Text Styles (Design Mismo)
+            pipCtx.font = "bold 40px Roboto, Arial";
+            pipCtx.textAlign = "center";
+            pipCtx.textBaseline = "middle";
+            pipCtx.lineWidth = 6;
+            pipCtx.lineJoin = "round";
+
+            const x = pipCanvas.width / 2;
+            const y = pipCanvas.height / 2;
+
+            // Handle wrapping manually for canvas
+            const maxW = 580;
+            const words = text.split(' ');
+            let line = '';
+            let lines = [];
+
+            for(let n = 0; n < words.length; n++) {
+                let testLine = line + words[n] + ' ';
+                let metrics = pipCtx.measureText(testLine);
+                let testWidth = metrics.width;
+                if (testWidth > maxW && n > 0) {
+                    lines.push(line);
+                    line = words[n] + ' ';
+                } else {
+                    line = testLine;
+                }
+            }
+            lines.push(line);
+
+            // Draw lines
+            const lineHeight = 50;
+            const startY = y - ((lines.length - 1) * lineHeight) / 2;
+
+            lines.forEach((l, i) => {
+                const ly = startY + (i * lineHeight);
+                // Stroke (Black Outline)
+                pipCtx.strokeStyle = "black";
+                pipCtx.strokeText(l, x, ly);
+                // Fill (Yellow/Gold)
+                pipCtx.fillStyle = "#FFD700";
+                pipCtx.fillText(l, x, ly);
+            });
+        }
+
+        async function togglePiP() {
+            if (document.pictureInPictureElement) {
+                // Close
+                await document.exitPictureInPicture();
+                pipActive = false;
+            } else {
+                // Open
+                if (pipVideo.readyState === 0) {
+                    // Init stream if first time
+                    const stream = pipCanvas.captureStream(10); // 10 FPS is enough for text
+                    pipVideo.srcObject = stream;
+                    updatePiPCanvas("Starting Pop-out...");
+                }
+                try {
+                    await pipVideo.play();
+                    await pipVideo.requestPictureInPicture();
+                    pipActive = true;
+                    updatePiPCanvas("Waiting for translation...");
+                } catch (e) {
+                    alert("Pop-out failed. Try interacting with the page first.");
+                    console.error(e);
+                }
+            }
+        }
+
+        // --- Other Functions ---
         function toggleSettings() { document.getElementById('settings-modal').classList.toggle('hidden'); }
         function saveSettings() {
             apiKey = document.getElementById('api-key-input').value.trim();
             localStorage.setItem('gemini_api_key', apiKey);
             fastMode = document.getElementById('fast-mode-check').checked;
-            subtitleSize = document.getElementById('font-size-slider').value;
-            subtitleEnglish.style.fontSize = subtitleSize + "px";
-            capsuleText.style.fontSize = (subtitleSize * 0.6) + "px";
             toggleSettings();
         }
         function enterSubtitleMode() {
@@ -671,44 +632,7 @@
             document.querySelector('.exit-btn').classList.add('hidden');
             if (document.exitFullscreen && document.fullscreenElement) document.exitFullscreen().catch(()=>{});
         }
-        function toggleMiniMode() {
-            document.body.classList.add('mini-mode');
-            document.getElementById('capsule-window').style.display = 'flex';
-        }
-        function exitMiniMode() {
-            document.body.classList.remove('mini-mode');
-            document.getElementById('capsule-window').style.display = 'none';
-        }
 
-        // Draggable Logic
-        const capsule = document.getElementById('capsule-window');
-        let isDragging=false, currentX, currentY, initialX, initialY, xOffset=0, yOffset=0;
-        capsule.addEventListener("mousedown", dragStart);
-        capsule.addEventListener("touchstart", dragStart, {passive: false});
-        document.addEventListener("mouseup", dragEnd);
-        document.addEventListener("touchend", dragEnd);
-        document.addEventListener("mousemove", drag);
-        document.addEventListener("touchmove", drag, {passive: false});
-
-        function dragStart(e) {
-            if (e.type === "touchstart") { initialX = e.touches[0].clientX - xOffset; initialY = e.touches[0].clientY - yOffset; }
-            else { initialX = e.clientX - xOffset; initialY = e.clientY - yOffset; }
-            if (e.target.closest('.handle') || e.target === capsule) isDragging = true;
-        }
-        function dragEnd(e) { initialX = currentX; initialY = currentY; isDragging = false; }
-        function drag(e) {
-            if (isDragging) {
-                e.preventDefault();
-                if (e.type === "touchmove") { currentX = e.touches[0].clientX - initialX; currentY = e.touches[0].clientY - initialY; }
-                else { currentX = e.clientX - initialX; currentY = e.clientY - initialY; }
-                xOffset = currentX; yOffset = currentY;
-                capsule.style.transform = "translate3d(" + currentX + "px, " + currentY + "px, 0)";
-            }
-        }
-        document.getElementById('font-size-slider').addEventListener('input', (e) => {
-            subtitleSize = e.target.value;
-            subtitleEnglish.style.fontSize = subtitleSize + "px";
-        });
     </script>
 </body>
 </html>
