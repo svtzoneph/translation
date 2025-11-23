@@ -20,9 +20,14 @@
 
     <style>
         body { font-family: 'Inter', sans-serif; }
-        /* Animation utilities */
         .animate-in { animation: fadeIn 0.3s ease-out; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+        
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #1a1a1a; }
+        ::-webkit-scrollbar-thumb { background: #444; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #555; }
     </style>
 </head>
 <body class="bg-gray-950 text-white min-h-screen">
@@ -34,17 +39,7 @@
 
         // --- ICONS (SVG Components) ---
         const Icon = ({ path, className }) => (
-            <svg 
-                xmlns="http://www.w3.org/2000/svg" 
-                width="24" height="24" 
-                viewBox="0 0 24 24" 
-                fill="none" 
-                stroke="currentColor" 
-                strokeWidth="2" 
-                strokeLinecap="round" 
-                strokeLinejoin="round" 
-                className={className}
-            >
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
                 {path}
             </svg>
         );
@@ -59,7 +54,8 @@
             Layers: (props) => <Icon {...props} path={<><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></>} />,
             Palette: (props) => <Icon {...props} path={<><circle cx="13.5" cy="6.5" r=".5"/><circle cx="17.5" cy="10.5" r=".5"/><circle cx="8.5" cy="7.5" r=".5"/><circle cx="6.5" cy="12.5" r=".5"/><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125a1.64 1.64 0 0 1 1.668-1.668h1.996c3.051 0 5.555-2.503 5.555-5.554C21.965 6.012 17.461 2 12 2z"/></>} />,
             Maximize: (props) => <Icon {...props} path={<><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/></>} />,
-            AlertCircle: (props) => <Icon {...props} path={<><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></>} />
+            AlertCircle: (props) => <Icon {...props} path={<><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></>} />,
+            FileText: (props) => <Icon {...props} path={<><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></>} />
         };
 
         // --- MAIN COMPONENT ---
@@ -70,7 +66,8 @@
                 secondary: "bg-gray-700 hover:bg-gray-600 text-gray-100 active:scale-95",
                 danger: "bg-red-600 hover:bg-red-500 text-white shadow-lg shadow-red-500/20 active:scale-95",
                 ghost: "hover:bg-gray-800 text-gray-300 hover:text-white active:scale-95",
-                outline: "border border-gray-600 text-gray-300 hover:border-gray-400 hover:text-white active:scale-95"
+                outline: "border border-gray-600 text-gray-300 hover:border-gray-400 hover:text-white active:scale-95",
+                success: "bg-green-600 hover:bg-green-500 text-white shadow-lg shadow-green-500/20 active:scale-95"
             };
             return (
                 <button onClick={onClick} className={`${baseStyle} ${variants[variant]} ${className}`} {...props}>
@@ -92,9 +89,10 @@
             const [showSettings, setShowSettings] = useState(false);
             const [obsMode, setObsMode] = useState(false);
             const [alertMsg, setAlertMsg] = useState('');
+            const [fileHandle, setFileHandle] = useState(null);
             
             const [styles, setStyles] = useState({
-                fontSize: 28,
+                fontSize: 32,
                 textColor: '#ffffff',
                 bgColor: '#000000',
                 bgOpacity: 60,
@@ -109,6 +107,7 @@
             const recognitionRef = useRef(null);
             const streamRef = useRef(null);
             const pipWindowRef = useRef(null);
+            const fileHandleRef = useRef(null); // Ref for immediate access in callbacks
 
             useEffect(() => {
                 const savedKey = localStorage.getItem('gemini_api_key');
@@ -126,6 +125,48 @@
                 setTimeout(() => setAlertMsg(''), 5000);
             };
 
+            // --- FILE SYSTEM ACCESS API FOR OBS .TXT ---
+            const connectLocalFile = async () => {
+                if (!window.showSaveFilePicker) {
+                    showAlert("Your browser doesn't support local file saving. Use Chrome/Edge.");
+                    return;
+                }
+                try {
+                    const handle = await window.showSaveFilePicker({
+                        suggestedName: 'obs_captions.txt',
+                        types: [{
+                            description: 'Text Files',
+                            accept: { 'text/plain': ['.txt'] },
+                        }],
+                    });
+                    fileHandleRef.current = handle;
+                    setFileHandle(handle);
+                    
+                    // Write initial test
+                    await writeToFile("OBS Connected. Waiting for audio...");
+                    showAlert("Connected to .txt file! Add this file to OBS.");
+                } catch (err) {
+                    console.error(err);
+                    showAlert("Failed to connect file.");
+                }
+            };
+
+            const writeToFile = async (text) => {
+                if (!fileHandleRef.current) return;
+                try {
+                    // Create a writable stream to the file
+                    const writable = await fileHandleRef.current.createWritable();
+                    // Write the text
+                    await writable.write(text);
+                    // Close the file - required for OBS to see the update
+                    await writable.close();
+                } catch (err) {
+                    console.error("File write error:", err);
+                    // If permission is lost, we might need to reset, but for now just log
+                }
+            };
+
+            // --- TRANSLATION LOGIC ---
             const translateText = async (text) => {
                 if (!text || !apiKey || text.trim().length < 2) return;
                 
@@ -139,11 +180,16 @@
                             body: JSON.stringify({
                                 contents: [{
                                     parts: [{
-                                        text: `Translate this Korean text to English for subtitles. 
-                                        Rules: Concise, Natural. If meaning is ambiguous, add (Tagalog: <translation>) at end.
-                                        Korean: "${text}"`
+                                        text: `Task: Translate Korean to English instantly. 
+                                        Input: "${text}"
+                                        Constraint: Output ONLY the English translation. No explanations.
+                                        Accuracy: High. If cultural term, translate meaning.`
                                     }]
-                                }]
+                                }],
+                                generationConfig: {
+                                    temperature: 0.1, // Lower temperature = more deterministic/accurate
+                                    maxOutputTokens: 100,
+                                }
                             })
                         }
                     );
@@ -152,7 +198,13 @@
                     if (data.error) {
                         showAlert("API Error: Check Key");
                     } else if (data.candidates && data.candidates[0].content) {
-                        setTranslation(data.candidates[0].content.parts[0].text);
+                        const result = data.candidates[0].content.parts[0].text.trim();
+                        setTranslation(result);
+                        
+                        // Update the .txt file for OBS
+                        if (fileHandleRef.current) {
+                            writeToFile(result);
+                        }
                     }
                 } catch (error) {
                     console.error("Translation network error:", error);
@@ -161,6 +213,7 @@
                 }
             };
 
+            // --- AUDIO CAPTURE ---
             const startCapture = async () => {
                 const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
                 if (!SpeechRecognition) {
@@ -177,7 +230,8 @@
                                 audio: {
                                     echoCancellation: false,
                                     autoGainControl: false,
-                                    noiseSuppression: false
+                                    noiseSuppression: false,
+                                    channelCount: 1 
                                 }
                             });
                         } catch (err) {
@@ -209,6 +263,7 @@
                         setIsCapturing(true);
                         setTranscript("Listening...");
                         setTranslation("");
+                        if (fileHandleRef.current) writeToFile(""); // Clear OBS file
                     };
 
                     recognition.onerror = (event) => {
@@ -234,7 +289,8 @@
                                 setTranscript(finalTranscript);
                                 translateText(finalTranscript);
                             } else {
-                                // optional: show interim
+                                // Show interim text in gray immediately for speed
+                                // Optional: We could translate interim results but it burns API quota fast
                             }
                         }
                     };
@@ -255,11 +311,13 @@
                 setIsCapturing(false);
                 setTranscript("Paused");
                 setTranslation("");
+                if (fileHandleRef.current) writeToFile(""); // Clear OBS file
             };
 
+            // --- UI HELPERS ---
             const togglePiP = async () => {
                 if (!window.documentPictureInPicture) {
-                    showAlert("PiP not supported in this browser.");
+                    showAlert("PiP not supported.");
                     return;
                 }
                 if (window.documentPictureInPicture.window) {
@@ -270,21 +328,17 @@
                 try {
                     const pipWindow = await window.documentPictureInPicture.requestWindow({ width: 800, height: 300 });
                     pipWindowRef.current = pipWindow;
-
-                    // Copy styles
+                    
+                    // Copy Styles
                     [...document.styleSheets].forEach((styleSheet) => {
                         try {
                             if (styleSheet.href) {
                                 const link = document.createElement('link');
-                                link.rel = 'stylesheet';
-                                link.type = styleSheet.type;
-                                link.media = styleSheet.media;
-                                link.href = styleSheet.href;
+                                link.rel = 'stylesheet'; link.href = styleSheet.href;
                                 pipWindow.document.head.appendChild(link);
                             } else if (styleSheet.cssRules) {
-                                const cssRules = [...styleSheet.cssRules].map((rule) => rule.cssText).join('');
                                 const style = document.createElement('style');
-                                style.textContent = cssRules;
+                                style.textContent = [...styleSheet.cssRules].map(r => r.cssText).join('');
                                 pipWindow.document.head.appendChild(style);
                             }
                         } catch (e) {}
@@ -292,24 +346,19 @@
 
                     const container = document.getElementById('caption-container');
                     const pipBody = pipWindow.document.body;
-                    pipBody.style.backgroundColor = "black";
-                    pipBody.style.display = "flex";
-                    pipBody.style.justifyContent = "center";
-                    pipBody.style.alignItems = "center";
-                    pipBody.style.height = "100vh";
-                    pipBody.style.margin = "0";
+                    Object.assign(pipBody.style, {
+                        backgroundColor: "black", display: "flex", justifyContent: "center",
+                        alignItems: "center", height: "100vh", margin: "0"
+                    });
                     pipBody.appendChild(container);
 
                     pipWindow.addEventListener("pagehide", () => {
-                        const mainContainerWrapper = document.getElementById('main-preview-area');
-                        if (mainContainerWrapper && container) {
-                            mainContainerWrapper.appendChild(container);
-                        }
+                        const mainWrapper = document.getElementById('main-preview-area');
+                        if (mainWrapper && container) mainWrapper.appendChild(container);
                         pipWindowRef.current = null;
                     });
                 } catch (err) {
-                    console.error("PiP failed:", err);
-                    showAlert("Failed to open Picture-in-Picture.");
+                    showAlert("PiP failed.");
                 }
             };
 
@@ -319,19 +368,11 @@
                 textShadow: '2px 2px 0 #000, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000',
             });
 
-            const getTextStyle = () => ({
-                color: styles.textColor,
-                fontSize: `${styles.fontSize}px`,
-                fontWeight: styles.fontWeight,
-                lineHeight: 1.2,
-            });
-
             return (
                 <div className={`min-h-screen ${obsMode ? 'bg-transparent' : 'bg-gray-950 text-white'} font-sans selection:bg-blue-500/30 transition-colors duration-300`}>
                     
-                    {/* Alert Toast */}
                     {alertMsg && (
-                        <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 bg-red-600 text-white px-6 py-3 rounded-lg shadow-xl animate-in flex items-center gap-2">
+                        <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 bg-red-600 text-white px-6 py-3 rounded-lg shadow-xl animate-in flex items-center gap-2 font-bold">
                             <Icons.AlertCircle className="w-5 h-5"/> {alertMsg}
                         </div>
                     )}
@@ -351,9 +392,8 @@
                                     </div>
                                 </div>
                                 <div className="flex gap-2">
-                                    <Button variant="outline" onClick={() => setObsMode(true)} title="Removes UI for OBS capture">
-                                        <Icons.Layers className="w-4 h-4" />
-                                        <span className="hidden sm:inline">OBS Mode</span>
+                                    <Button variant="outline" onClick={() => setObsMode(true)}>
+                                        <Icons.Layers className="w-4 h-4" /> OBS Mode
                                     </Button>
                                     <Button variant="ghost" onClick={() => setShowSettings(!showSettings)}>
                                         <Icons.Settings className="w-5 h-5" />
@@ -363,19 +403,28 @@
 
                             <Card className="grid grid-cols-1 md:grid-cols-2 gap-6 relative overflow-hidden">
                                 <div className="space-y-4">
-                                    <div className="flex items-center justify-between">
-                                        <label className="text-sm font-medium text-gray-400 uppercase tracking-wider">Audio Source</label>
-                                        {sourceType === 'system' && <span className="text-[10px] bg-yellow-500/20 text-yellow-400 px-2 py-0.5 rounded">Check "Share Audio"</span>}
-                                    </div>
+                                    <label className="text-sm font-medium text-gray-400 uppercase tracking-wider">Configuration</label>
+                                    
+                                    {/* Audio Source */}
                                     <div className="flex gap-2 bg-gray-800 p-1 rounded-lg">
                                         <button onClick={() => setSourceType('system')} className={`flex-1 py-2 px-3 rounded-md text-sm font-medium flex items-center justify-center gap-2 transition-all ${sourceType === 'system' ? 'bg-blue-600 text-white shadow-md' : 'text-gray-400 hover:text-white'}`}>
-                                            <Icons.Monitor className="w-4 h-4" /> System/App
+                                            <Icons.Monitor className="w-4 h-4" /> System
                                         </button>
                                         <button onClick={() => setSourceType('mic')} className={`flex-1 py-2 px-3 rounded-md text-sm font-medium flex items-center justify-center gap-2 transition-all ${sourceType === 'mic' ? 'bg-blue-600 text-white shadow-md' : 'text-gray-400 hover:text-white'}`}>
-                                            <Icons.Mic className="w-4 h-4" /> Microphone
+                                            <Icons.Mic className="w-4 h-4" /> Mic
                                         </button>
                                     </div>
-                                    {!apiKey && <div className="flex items-center gap-2 text-red-400 text-xs bg-red-900/20 p-2 rounded border border-red-900/50"><Icons.AlertCircle className="w-4 h-4" /><span>API Key required in settings.</span></div>}
+
+                                    {/* .TXT File Connector */}
+                                    <button 
+                                        onClick={connectLocalFile}
+                                        className={`w-full py-2 px-3 rounded-md text-sm font-medium flex items-center justify-center gap-2 transition-all border ${fileHandle ? 'bg-green-900/30 border-green-500/50 text-green-300' : 'bg-gray-800 border-gray-700 text-gray-300 hover:bg-gray-700'}`}
+                                    >
+                                        <Icons.FileText className="w-4 h-4" /> 
+                                        {fileHandle ? "Linked to .txt File (Active)" : "Link .txt for OBS"}
+                                    </button>
+
+                                    {!apiKey && <div className="flex items-center gap-2 text-red-400 text-xs bg-red-900/20 p-2 rounded border border-red-900/50"><Icons.AlertCircle className="w-4 h-4" /><span>API Key required.</span></div>}
                                 </div>
 
                                 <div className="space-y-3 flex flex-col justify-end">
@@ -459,7 +508,7 @@
                            <h2 className="font-medium mb-3 opacity-90 transition-all" style={{ color: styles.textColor, fontSize: `${styles.fontSize * 0.6}px`, textShadow: '1px 1px 2px rgba(0,0,0,0.8)' }}>
                              {transcript}
                            </h2>
-                           <h1 className="font-bold transition-all tracking-wide" style={getTextStyle()}>
+                           <h1 className="font-bold transition-all tracking-wide" style={{ color: styles.textColor, fontSize: `${styles.fontSize}px`, fontWeight: styles.fontWeight, lineHeight: 1.2, textShadow: '2px 2px 0 #000, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000' }}>
                              {translation || (isCapturing ? "..." : "")}
                            </h1>
                            {isTranslating && (
