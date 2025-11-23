@@ -41,7 +41,7 @@
             flex-direction: column;
             justify-content: flex-end;
             height: 80vh;
-            pointer-events: none; /* Let touches pass through if needed, though we might want exit button */
+            pointer-events: none;
         }
         
         body.subtitle-mode .exit-btn {
@@ -91,7 +91,6 @@
 </head>
 <body class="min-h-screen flex flex-col">
 
-    <!-- Header -->
     <header class="header-area bg-gray-900 border-b border-gray-800 p-4 shadow-lg sticky top-0 z-20">
         <div class="max-w-4xl mx-auto flex justify-between items-center">
             <div class="flex items-center gap-3">
@@ -110,7 +109,6 @@
         </div>
     </header>
 
-    <!-- Settings Modal -->
     <div id="settings-modal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
         <div class="bg-gray-800 rounded-2xl w-full max-w-md p-6 shadow-2xl border border-gray-700">
             <div class="flex justify-between items-center mb-6">
@@ -142,10 +140,8 @@
         </div>
     </div>
 
-    <!-- Main Content -->
     <main class="flex-grow flex flex-col items-center justify-start pt-6 pb-20 px-4 max-w-4xl mx-auto w-full">
 
-        <!-- Controls -->
         <div class="controls-panel w-full bg-gray-800/50 rounded-2xl p-6 border border-gray-700 shadow-xl backdrop-blur mb-6">
             <div class="flex flex-col sm:flex-row gap-4 justify-between items-center">
                 
@@ -168,45 +164,36 @@
                 </div>
             </div>
             
-            <!-- Status Bar -->
             <div class="mt-4 flex items-center gap-2 text-sm">
                 <span class="text-gray-400">Status:</span>
                 <span id="status-text" class="text-yellow-500 font-medium">Ready (Requires Mic)</span>
             </div>
         </div>
 
-        <!-- Live Transcript & Translation Area -->
         <div id="main-display" class="w-full space-y-6">
             
-            <!-- Current Active Sentence -->
             <div class="bg-gray-900 rounded-2xl p-6 border border-gray-800 min-h-[120px] flex flex-col justify-center items-center text-center shadow-inner relative overflow-hidden">
                 <div class="absolute top-2 left-3 text-xs font-bold text-gray-600 uppercase tracking-wider">Live Input</div>
                 
-                <!-- Korean Interim -->
                 <p id="interim-korean" class="korean-font text-gray-400 text-lg mb-2 opacity-80 min-h-[1.5em]">...</p>
                 
-                <!-- Loading Indicator for Translation -->
                 <div id="translation-loader" class="hidden absolute top-2 right-3">
                     <i class="fa-solid fa-circle-notch fa-spin text-violet-500"></i>
                 </div>
 
-                <!-- Latest Translation -->
                 <h2 id="live-english" class="text-2xl md:text-3xl font-bold text-yellow-400 leading-tight transition-all">
                     Waiting for speech...
                 </h2>
             </div>
 
-            <!-- History Log -->
             <div class="controls-panel w-full">
                 <h3 class="text-gray-400 text-sm font-bold uppercase tracking-wider mb-3 px-2">History</h3>
                 <div id="history-log" class="bg-black/30 rounded-xl p-4 h-64 overflow-y-auto space-y-3 border border-gray-800/50 font-sans">
-                    <!-- History items will go here -->
                     <div class="text-center text-gray-600 py-10 italic">Translation history will appear here.</div>
                 </div>
             </div>
         </div>
 
-        <!-- Subtitle Container (For Fullscreen Mode) -->
         <div id="subtitle-container" class="hidden">
             <div id="subtitle-content" class="transition-all duration-300">
                 <p id="subtitle-korean" class="korean-font text-gray-500 text-xl mb-2 opacity-0 transition-opacity duration-300"></p>
@@ -216,7 +203,6 @@
             </div>
         </div>
         
-        <!-- Exit Button for Subtitle Mode -->
         <button onclick="exitSubtitleMode()" class="exit-btn hidden bg-white/20 hover:bg-white/40 backdrop-blur text-white rounded-full p-3 transition">
             <i class="fa-solid fa-compress text-2xl"></i>
         </button>
@@ -226,7 +212,7 @@
     <script>
         // --- Configuration & State ---
         // Key added per user request
-        let apiKey = localStorage.getItem('gemini_api_key') || 'AIzaSyDpeXO_hj9L_XVa8tNuzFN2JDzlAzx9lP4';
+        let apiKey = localStorage.getItem('gemini_api_key') || '';
         if (apiKey) document.getElementById('api-key-input').value = apiKey;
 
         let recognition;
@@ -245,7 +231,7 @@
         
         const subtitleContainer = document.getElementById('subtitle-container');
         const subtitleEnglish = document.getElementById('subtitle-english');
-        const subtitleKorean = document.getElementById('subtitle-korean'); // Hidden by default in sub mode usually
+        const subtitleKorean = document.getElementById('subtitle-korean'); 
 
         const loader = document.getElementById('translation-loader');
 
@@ -261,9 +247,9 @@
             const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
             const rec = new SpeechRecognition();
             
-            rec.continuous = true; // Keep listening
-            rec.interimResults = true; // Show results as they are spoken
-            rec.lang = 'ko-KR'; // Korean
+            rec.continuous = true; 
+            rec.interimResults = true; 
+            rec.lang = 'ko-KR'; 
             
             rec.onstart = () => {
                 isListening = true;
@@ -275,7 +261,6 @@
             rec.onerror = (event) => {
                 console.error("Speech Error:", event.error);
                 if (event.error === 'no-speech') {
-                    // Ignore no-speech errors, just a pause
                     return;
                 }
                 statusText.innerText = `Error: ${event.error}`;
@@ -285,7 +270,6 @@
             };
 
             rec.onend = () => {
-                // Auto-restart if it was supposed to be listening
                 if (isListening) {
                     console.log("Restarting recognition...");
                     try {
@@ -315,12 +299,10 @@
 
                 if (interimTranscript) {
                     interimKoreanEl.innerText = interimTranscript;
-                    // Optional: Update subtitle mode interim (maybe in grey)
-                    // subtitleEnglish.innerText = "..."; 
                 }
 
                 if (finalTranscript) {
-                    interimKoreanEl.innerText = finalTranscript; // Show finalized Korean
+                    interimKoreanEl.innerText = finalTranscript; 
                     handleFinalTranscript(finalTranscript);
                 }
             };
@@ -347,7 +329,7 @@
                 }
                 try {
                     recognition.start();
-                    isListening = true; // Set flag immediately
+                    isListening = true; 
                 } catch (e) {
                     console.error(e);
                 }
@@ -387,7 +369,8 @@
 
             const prompt = `Translate this Korean text from a movie/drama to concise, natural English subtitles. Do not include notes, just the translation: "${text}"`;
             
-            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
+            // --- FIX IS HERE: Changed from 2.5-preview to 1.5-flash ---
+            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
 
             try {
                 const response = await fetch(url, {
@@ -402,7 +385,7 @@
                 
                 if (data.error) {
                     console.error("Gemini Error:", data.error);
-                    return "[Translation Error]";
+                    return "[Translation Error: Check Console]";
                 }
 
                 return data.candidates?.[0]?.content?.parts?.[0]?.text || "[No Translation]";
@@ -419,7 +402,7 @@
             
             // Subtitle Mode Display
             subtitleEnglish.innerText = english;
-            subtitleKorean.innerText = korean; // Can enable if user wants dual subs
+            subtitleKorean.innerText = korean; 
             
             // History
             addToHistory(korean, english);
@@ -473,13 +456,9 @@
             document.getElementById('subtitle-container').classList.remove('hidden');
             document.querySelector('.exit-btn').classList.remove('hidden');
             
-            // Request full screen for immersive feel
-            // We use .catch() here because requestFullscreen returns a Promise
-            // which rejects if the permission policy (iframe) disallows it.
             if (document.documentElement.requestFullscreen) {
                 document.documentElement.requestFullscreen().catch(e => {
                     console.warn("Fullscreen blocked or not supported:", e);
-                    // No need to alert user; the CSS mode still works fine.
                 });
             }
         }
