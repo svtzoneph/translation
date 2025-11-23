@@ -7,7 +7,14 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;700&family=Roboto:wght@400;500;700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;700&family=Roboto:wght@400;500;700&family=Open+Sans:wght@600&family=Montserrat:wght@700&display=swap');
+
+        :root {
+            --sub-color: #FFD700;
+            --sub-outline: #000000;
+            --sub-font: 'Roboto', sans-serif;
+            --sub-size: 32px;
+        }
 
         body {
             font-family: 'Roboto', sans-serif;
@@ -15,10 +22,6 @@
             color: #e5e5e5;
             overflow-x: hidden;
             transition: background-color 0.3s ease;
-        }
-
-        .korean-font {
-            font-family: 'Noto Sans KR', sans-serif;
         }
 
         /* Subtitle Mode Styles */
@@ -49,17 +52,21 @@
             background-color: #7c3aed; color: white; border-color: #7c3aed;
         }
 
-        /* Standard Subtitle Style for Main Display */
+        /* Dynamic Subtitle Style */
         .subtitle-style {
-            color: #FFD700; /* Gold/Yellow */
+            color: var(--sub-color);
+            font-family: var(--sub-font);
+            font-size: var(--sub-size);
             text-shadow: 
-                -2px -2px 0 #000,  
-                 2px -2px 0 #000,
-                -2px  2px 0 #000,
-                 2px  2px 0 #000,
+                -2px -2px 0 var(--sub-outline),  
+                 2px -2px 0 var(--sub-outline),
+                -2px  2px 0 var(--sub-outline),
+                 2px  2px 0 var(--sub-outline),
                  4px 4px 8px rgba(0,0,0,0.9);
             font-weight: 800;
             letter-spacing: 0.5px;
+            line-height: 1.3;
+            transition: all 0.2s ease;
         }
     </style>
 </head>
@@ -91,20 +98,62 @@
 
     <!-- Settings Modal -->
     <div id="settings-modal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
-        <div class="bg-gray-800 rounded-2xl w-full max-w-md p-6 shadow-2xl border border-gray-700">
+        <div class="bg-gray-800 rounded-2xl w-full max-w-md p-6 shadow-2xl border border-gray-700 max-h-[90vh] overflow-y-auto">
             <div class="flex justify-between items-center mb-6">
                 <h2 class="text-xl font-bold text-white">Settings</h2>
                 <button onclick="toggleSettings()" class="text-gray-400 hover:text-white">
                     <i class="fa-solid fa-xmark text-2xl"></i>
                 </button>
             </div>
-            <div class="space-y-4">
+            <div class="space-y-5">
+                <!-- API Key -->
                 <div>
                     <label class="block text-sm font-medium text-gray-300 mb-2">Gemini API Key</label>
                     <input type="password" id="api-key-input" placeholder="Paste your API key here..." 
                         class="w-full bg-gray-900 border border-gray-700 rounded-lg p-3 text-white focus:ring-2 focus:ring-violet-500 focus:outline-none transition">
                 </div>
-                <div class="pt-4 border-t border-gray-700">
+
+                <div class="border-t border-gray-700 pt-4">
+                    <h3 class="text-white font-bold mb-3">Subtitle Appearance</h3>
+                    
+                    <!-- Colors -->
+                    <div class="grid grid-cols-2 gap-4 mb-4">
+                        <div>
+                            <label class="block text-xs text-gray-400 mb-1">Text Color</label>
+                            <div class="flex items-center gap-2 bg-gray-900 p-2 rounded-lg border border-gray-700">
+                                <input type="color" id="sub-color-input" value="#FFD700" class="w-8 h-8 rounded cursor-pointer bg-transparent border-none">
+                                <span class="text-xs text-gray-300">Choose</span>
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-xs text-gray-400 mb-1">Outline Color</label>
+                            <div class="flex items-center gap-2 bg-gray-900 p-2 rounded-lg border border-gray-700">
+                                <input type="color" id="sub-outline-input" value="#000000" class="w-8 h-8 rounded cursor-pointer bg-transparent border-none">
+                                <span class="text-xs text-gray-300">Choose</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Fonts -->
+                    <div class="mb-4">
+                        <label class="block text-xs text-gray-400 mb-1">Font Style</label>
+                        <select id="sub-font-select" class="w-full bg-gray-900 border border-gray-700 rounded-lg p-2 text-white text-sm">
+                            <option value="'Roboto', sans-serif">Standard (Roboto)</option>
+                            <option value="'Montserrat', sans-serif">Bold (Montserrat)</option>
+                            <option value="'Open Sans', sans-serif">Clean (Open Sans)</option>
+                            <option value="Arial, sans-serif">Basic (Arial)</option>
+                            <option value="'Courier New', monospace">Retro (Courier)</option>
+                        </select>
+                    </div>
+
+                    <!-- Size -->
+                    <div>
+                        <label class="block text-xs text-gray-400 mb-1">Size</label>
+                        <input type="range" id="font-size-slider" min="20" max="80" value="32" class="w-full accent-violet-500">
+                    </div>
+                </div>
+
+                <div class="pt-2 border-t border-gray-700">
                     <div class="flex justify-between items-center mb-2">
                         <label class="block text-sm font-medium text-gray-300">Fast Prediction (Mic Mode)</label>
                         <input type="checkbox" id="fast-mode-check" checked class="w-4 h-4 accent-violet-500">
@@ -158,9 +207,12 @@
                     <span class="text-gray-400">Status:</span>
                     <span id="status-text" class="text-yellow-500 font-medium">Ready</span>
                 </div>
+                <div id="offline-warning" class="hidden text-xs text-red-400 mt-1 font-bold">
+                    <i class="fa-solid fa-wifi mr-1"></i> You are offline. Please connect to the internet.
+                </div>
                 <div id="system-audio-hint" class="hidden text-xs text-gray-400 bg-gray-800 p-2 rounded border border-gray-600 mt-2">
                     <i class="fa-solid fa-circle-exclamation text-yellow-500 mr-1"></i> 
-                    <strong>Important:</strong> When the browser popup appears, switch to the "Tab" option, select your movie tab, and <strong>CHECK "Share Audio"</strong>.
+                    <strong>Important:</strong> Select your movie tab and <strong>CHECK "Share Audio"</strong>.
                 </div>
             </div>
         </div>
@@ -170,27 +222,28 @@
             
             <!-- Current Active Sentence -->
             <div class="bg-black rounded-2xl p-8 border border-gray-800 min-h-[160px] flex flex-col justify-center items-center text-center shadow-2xl relative overflow-hidden">
-                <div class="absolute top-3 left-4 text-xs font-bold text-gray-600 uppercase tracking-wider">Live Preview</div>
                 
-                <!-- Korean Interim -->
-                <p id="interim-korean" class="korean-font text-gray-500 text-lg mb-4 opacity-80 min-h-[1.5em]">...</p>
-                
-                <!-- Loading Indicator -->
+                <!-- Loading Indicator (Subtle) -->
                 <div id="translation-loader" class="hidden absolute top-3 right-4">
-                    <i class="fa-solid fa-circle-notch fa-spin text-violet-500"></i>
+                    <i class="fa-solid fa-circle-notch fa-spin text-gray-600"></i>
                 </div>
 
                 <!-- Latest Translation -->
-                <h2 id="live-english" class="text-3xl md:text-4xl subtitle-style leading-snug transition-all">
-                    Waiting for audio...
+                <h2 id="live-english" class="subtitle-style">
+                    
                 </h2>
+                
+                <!-- Initial Placeholder -->
+                <div id="empty-state" class="text-gray-700 font-mono text-sm">
+                    Translation will appear here...
+                </div>
             </div>
 
             <!-- History Log -->
             <div class="controls-panel w-full">
                 <h3 class="text-gray-400 text-sm font-bold uppercase tracking-wider mb-3 px-2">History</h3>
                 <div id="history-log" class="bg-black/30 rounded-xl p-4 h-64 overflow-y-auto space-y-3 border border-gray-800/50 font-sans">
-                    <div class="text-center text-gray-600 py-10 italic">Translation history will appear here.</div>
+                    <div class="text-center text-gray-600 py-10 italic">History will appear here.</div>
                 </div>
             </div>
         </div>
@@ -198,8 +251,7 @@
         <!-- Subtitle Container (For Fullscreen Mode) -->
         <div id="subtitle-container" class="hidden">
             <div id="subtitle-content" class="transition-all duration-300">
-                <p id="subtitle-korean" class="korean-font text-gray-500 text-xl mb-2 opacity-0 transition-opacity duration-300"></p>
-                <p id="subtitle-english" class="subtitle-style text-4xl leading-tight">
+                <p id="subtitle-english" class="subtitle-style">
                     Listening...
                 </p>
             </div>
@@ -221,16 +273,20 @@
         let apiKey = localStorage.getItem('gemini_api_key') || 'AIzaSyDpeXO_hj9L_XVa8tNuzFN2JDzlAzx9lP4';
         if (apiKey) document.getElementById('api-key-input').value = apiKey;
 
-        let recognition; // For Mic mode
-        let mediaRecorder; // For System Audio mode
-        let audioChunks = [];
+        // Appearance Config
+        let config = {
+            color: '#FFD700',
+            outline: '#000000',
+            font: "'Roboto', sans-serif",
+            size: 32
+        };
+
+        let recognition; 
+        let mediaRecorder; 
         let systemStream;
-        
         let isProcessing = false;
         let currentMode = 'mic';
         let fastMode = true;
-
-        // Predictive State
         let interimTimeout = null;
         let lastTranslatedText = "";
 
@@ -239,24 +295,29 @@
         const recordIndicator = document.getElementById('record-indicator');
         const recordText = document.getElementById('record-text');
         const statusText = document.getElementById('status-text');
-        const interimKoreanEl = document.getElementById('interim-korean');
         const liveEnglishEl = document.getElementById('live-english');
+        const emptyState = document.getElementById('empty-state');
         const historyLog = document.getElementById('history-log');
         const subtitleEnglish = document.getElementById('subtitle-english');
-        const subtitleKorean = document.getElementById('subtitle-korean');
         const loader = document.getElementById('translation-loader');
         const btnMic = document.getElementById('btn-mic-mode');
         const btnSys = document.getElementById('btn-sys-mode');
         const systemHint = document.getElementById('system-audio-hint');
+        const offlineWarning = document.getElementById('offline-warning');
 
         // PiP Elements
         const pipCanvas = document.getElementById('pip-canvas');
         const pipCtx = pipCanvas.getContext('2d');
         const pipVideo = document.getElementById('pip-video');
         let pipActive = false;
+        
+        // --- Check Connection ---
+        setInterval(() => {
+            if (!navigator.onLine) offlineWarning.classList.remove('hidden');
+            else offlineWarning.classList.add('hidden');
+        }, 2000);
 
         // --- Mode Switching ---
-
         function setMode(mode) {
             if (isProcessing) toggleProcessing();
             currentMode = mode;
@@ -280,7 +341,6 @@
         }
 
         // --- Microphone Logic ---
-
         function initSpeechRecognition() {
             if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) return null;
             const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -292,7 +352,7 @@
             rec.onstart = () => {
                 isProcessing = true;
                 updateUIState(true);
-                statusText.innerText = "Listening to Microphone...";
+                statusText.innerText = "Listening...";
                 statusText.className = "text-green-400 font-medium";
             };
             rec.onerror = (event) => {
@@ -316,20 +376,16 @@
                     else interimTranscript += event.results[i][0].transcript;
                 }
                 
-                if (interimTranscript) {
-                    interimKoreanEl.innerText = interimTranscript;
-                    if (fastMode) {
-                        clearTimeout(interimTimeout);
-                        interimTimeout = setTimeout(() => {
-                            if (interimTranscript.length > 3 && interimTranscript !== lastTranslatedText) {
-                                handleTextTranslation(interimTranscript);
-                            }
-                        }, 700);
-                    }
+                if (interimTranscript && fastMode) {
+                    clearTimeout(interimTimeout);
+                    interimTimeout = setTimeout(() => {
+                        if (interimTranscript.length > 3 && interimTranscript !== lastTranslatedText) {
+                            handleTextTranslation(interimTranscript);
+                        }
+                    }, 700);
                 }
                 if (finalTranscript) {
                     clearTimeout(interimTimeout);
-                    interimKoreanEl.innerText = finalTranscript;
                     if (finalTranscript !== lastTranslatedText) handleTextTranslation(finalTranscript);
                 }
             };
@@ -349,18 +405,8 @@
         }
 
         // --- System Audio Logic ---
-
         async function toggleSystemAudioRecording() {
-            if (isProcessing) {
-                isProcessing = false;
-                updateUIState(false);
-                if (mediaRecorder && mediaRecorder.state !== 'inactive') mediaRecorder.stop();
-                if (systemStream) systemStream.getTracks().forEach(track => track.stop());
-                statusText.innerText = "System Audio Stopped";
-                statusText.className = "text-yellow-500 font-medium";
-                return;
-            }
-
+            if (isProcessing) { stopSystemAudio(); return; }
             if (!apiKey) { toggleSettings(); alert("API Key Required"); return; }
 
             try {
@@ -371,40 +417,42 @@
                 });
                 
                 if (systemStream.getAudioTracks().length === 0) {
-                    alert("Capture Cancelled: You did not check the 'Share Audio' box. Please try again.");
+                    alert("Capture Cancelled: You did not check the 'Share Audio' box.");
                     systemStream.getTracks().forEach(track => track.stop());
                     return;
                 }
 
-                systemStream.getVideoTracks()[0].onended = () => {
-                    if(isProcessing) toggleSystemAudioRecording();
-                };
-
+                systemStream.getVideoTracks()[0].onended = () => { if(isProcessing) stopSystemAudio(); };
                 startMediaRecorder();
                 isProcessing = true;
                 updateUIState(true);
-                statusText.innerText = "Capturing System Audio...";
+                statusText.innerText = "Capturing Audio...";
                 statusText.className = "text-blue-400 font-medium";
 
             } catch (err) {
-                console.error(err);
-                if (err.name === 'NotAllowedError') {
-                    statusText.innerText = "Permission Denied";
-                    alert("Capture Cancelled. You clicked Cancel or didn't select a screen.");
-                } else {
-                    statusText.innerText = "Capture Error";
-                }
+                statusText.innerText = "Capture Cancelled";
                 statusText.className = "text-red-500";
+                if (systemStream) systemStream.getTracks().forEach(track => track.stop());
             }
         }
 
+        function stopSystemAudio() {
+            isProcessing = false;
+            updateUIState(false);
+            if (mediaRecorder && mediaRecorder.state !== 'inactive') mediaRecorder.stop();
+            if (systemStream) systemStream.getTracks().forEach(track => track.stop());
+            statusText.innerText = "Stopped";
+            statusText.className = "text-yellow-500 font-medium";
+        }
+
         function startMediaRecorder() {
-            const mimeType = 'audio/webm;codecs=opus';
-            if (!MediaRecorder.isTypeSupported(mimeType)) {
-                alert("Browser doesn't support audio/webm");
-                return;
-            }
-            mediaRecorder = new MediaRecorder(systemStream, { mimeType });
+            let mimeType = '';
+            const types = ['audio/webm;codecs=opus', 'audio/webm', 'audio/mp4'];
+            for (const type of types) if (MediaRecorder.isTypeSupported(type)) { mimeType = type; break; }
+
+            const options = mimeType ? { mimeType } : undefined;
+            mediaRecorder = new MediaRecorder(systemStream, options);
+
             mediaRecorder.ondataavailable = async (e) => {
                 if (e.data.size > 0) handleAudioTranslation(e.data);
             };
@@ -421,36 +469,39 @@
         }
 
         // --- Translation Handlers ---
-
         async function handleTextTranslation(text) {
             lastTranslatedText = text;
             loader.classList.remove('hidden');
             const translation = await callGeminiText(text);
             loader.classList.add('hidden');
-            updateDisplay(text, translation);
+            updateDisplay(translation);
         }
 
         async function handleAudioTranslation(audioBlob) {
+            if (!navigator.onLine) return;
             loader.classList.remove('hidden');
-            interimKoreanEl.innerText = "(Processing...)";
-            const base64Audio = await blobToBase64(audioBlob);
-            const result = await callGeminiAudio(base64Audio);
-            loader.classList.add('hidden');
-            if (result && result.english) updateDisplay(result.korean, result.english);
+            
+            try {
+                const base64Audio = await blobToBase64(audioBlob);
+                const result = await callGeminiAudio(base64Audio);
+                if (result && result.english) {
+                    updateDisplay(result.english);
+                }
+            } catch (e) {
+                console.error(e);
+            } finally {
+                loader.classList.add('hidden');
+            }
         }
 
         // --- API Calls (Gemini) ---
-
         async function callGeminiText(text) {
-            const prompt = `Translate this Korean text to concise English subtitles: "${text}"`;
+            const prompt = `Translate this Korean text to concise English subtitles. Return ONLY the English translation. Text: "${text}"`;
             return await sendToGemini([{ parts: [{ text: prompt }] }]);
         }
 
         async function callGeminiAudio(base64Data) {
-            const prompt = `Transcribe the Korean audio to Korean text, and then translate it to English. 
-            Return a JSON object with keys "korean" and "english". 
-            If no speech is detected, return empty strings. Example: {"korean": "안녕하세요", "english": "Hello"}`;
-            
+            const prompt = `Transcribe Korean audio and translate to English. Return JSON: {"english": "translated text"}. If no speech, return empty string.`;
             const payload = {
                 contents: [{
                     parts: [
@@ -488,7 +539,6 @@
         }
 
         // --- UI Updates ---
-
         function updateUIState(active) {
             if (active) {
                 recordBtn.classList.replace('bg-gray-700', 'bg-red-600');
@@ -505,46 +555,77 @@
             }
         }
 
-        function updateDisplay(korean, english) {
+        function updateDisplay(english) {
             if (!english || english.trim() === "") return;
-            liveEnglishEl.innerText = english;
-            subtitleEnglish.innerText = english;
-            subtitleKorean.innerText = korean;
-            interimKoreanEl.innerText = korean;
-            addToHistory(korean, english);
-            updatePiPCanvas(english); // Update the floating window
+            
+            // Remove thoughts/placeholders regex just in case
+            const cleanEnglish = english.replace(/<thought>.*?<\/thought>/gs, '').trim();
+            if (!cleanEnglish) return;
+
+            emptyState.style.display = 'none';
+            liveEnglishEl.innerText = cleanEnglish;
+            subtitleEnglish.innerText = cleanEnglish;
+            addToHistory(cleanEnglish);
+            updatePiPCanvas(cleanEnglish);
         }
 
-        function addToHistory(korean, english) {
-            if (historyLog.firstChild && historyLog.firstChild.dataset && historyLog.firstChild.dataset.ko === korean) return;
+        function addToHistory(english) {
+            if (historyLog.firstChild && historyLog.firstChild.innerText === english) return;
             if (historyLog.querySelector('.italic')) historyLog.innerHTML = '';
             const item = document.createElement('div');
-            item.dataset.ko = korean;
-            item.className = "bg-gray-800 p-3 rounded-lg border-l-4 border-violet-500 animate-[fadeIn_0.5s_ease-out]";
-            item.innerHTML = `
-                <p class="text-xs text-gray-500 mb-1 korean-font">${korean}</p>
-                <p class="text-white font-medium">${english}</p>
-            `;
+            item.className = "text-white p-2 border-b border-gray-700/50 text-lg";
+            item.innerText = english;
             historyLog.insertBefore(item, historyLog.firstChild);
         }
 
         function clearHistory() {
-            historyLog.innerHTML = '<div class="text-center text-gray-600 py-10 italic">Translation history will appear here.</div>';
-            liveEnglishEl.innerText = "Waiting...";
-            updatePiPCanvas("Waiting...");
+            historyLog.innerHTML = '<div class="text-center text-gray-600 py-10 italic">History will appear here.</div>';
+            liveEnglishEl.innerText = "";
+            emptyState.style.display = 'block';
+            updatePiPCanvas("");
+        }
+
+        // --- Settings Logic ---
+        function toggleSettings() { document.getElementById('settings-modal').classList.toggle('hidden'); }
+        
+        function saveSettings() {
+            apiKey = document.getElementById('api-key-input').value.trim();
+            localStorage.setItem('gemini_api_key', apiKey);
+            fastMode = document.getElementById('fast-mode-check').checked;
+            
+            // Update Config
+            config.color = document.getElementById('sub-color-input').value;
+            config.outline = document.getElementById('sub-outline-input').value;
+            config.font = document.getElementById('sub-font-select').value;
+            config.size = document.getElementById('font-size-slider').value;
+
+            // Apply to CSS Variables
+            document.documentElement.style.setProperty('--sub-color', config.color);
+            document.documentElement.style.setProperty('--sub-outline', config.outline);
+            document.documentElement.style.setProperty('--sub-font', config.font.replace(/'/g, "")); // CSS var handles quotes weirdly sometimes, mostly okay
+            document.documentElement.style.setProperty('--sub-size', config.size + 'px');
+
+            // Re-render active subtitle
+            if (liveEnglishEl.innerText) {
+                liveEnglishEl.style.fontFamily = config.font; // Explicit set for safety
+                updatePiPCanvas(liveEnglishEl.innerText);
+            }
+
+            toggleSettings();
         }
 
         // --- Picture-in-Picture (Pop-out) Logic ---
-
         function updatePiPCanvas(text) {
-            if (!pipActive && pipVideo.paused) return; // Save resources if not used
+            if (!pipActive && pipVideo.paused) return;
 
-            // Clear Background (Black)
+            // Clear Background
             pipCtx.fillStyle = "black";
             pipCtx.fillRect(0, 0, pipCanvas.width, pipCanvas.height);
 
-            // Text Styles (Design Mismo)
-            pipCtx.font = "bold 40px Roboto, Arial";
+            // Configure Font based on settings
+            // Scale size slightly for canvas resolution (canvas is 600px wide)
+            const canvasFontSize = Math.max(30, parseInt(config.size) * 1.2); 
+            pipCtx.font = `900 ${canvasFontSize}px ${config.font.split(',')[0].replace(/['"]/g, '')}, sans-serif`;
             pipCtx.textAlign = "center";
             pipCtx.textBaseline = "middle";
             pipCtx.lineWidth = 6;
@@ -552,9 +633,9 @@
 
             const x = pipCanvas.width / 2;
             const y = pipCanvas.height / 2;
-
-            // Handle wrapping manually for canvas
             const maxW = 580;
+
+            // Wrap Text
             const words = text.split(' ');
             let line = '';
             let lines = [];
@@ -562,8 +643,7 @@
             for(let n = 0; n < words.length; n++) {
                 let testLine = line + words[n] + ' ';
                 let metrics = pipCtx.measureText(testLine);
-                let testWidth = metrics.width;
-                if (testWidth > maxW && n > 0) {
+                if (metrics.width > maxW && n > 0) {
                     lines.push(line);
                     line = words[n] + ' ';
                 } else {
@@ -572,54 +652,41 @@
             }
             lines.push(line);
 
-            // Draw lines
-            const lineHeight = 50;
+            // Draw
+            const lineHeight = canvasFontSize * 1.2;
             const startY = y - ((lines.length - 1) * lineHeight) / 2;
 
             lines.forEach((l, i) => {
                 const ly = startY + (i * lineHeight);
-                // Stroke (Black Outline)
-                pipCtx.strokeStyle = "black";
+                // Outline
+                pipCtx.strokeStyle = config.outline;
                 pipCtx.strokeText(l, x, ly);
-                // Fill (Yellow/Gold)
-                pipCtx.fillStyle = "#FFD700";
+                // Fill
+                pipCtx.fillStyle = config.color;
                 pipCtx.fillText(l, x, ly);
             });
         }
 
         async function togglePiP() {
             if (document.pictureInPictureElement) {
-                // Close
                 await document.exitPictureInPicture();
                 pipActive = false;
             } else {
-                // Open
                 if (pipVideo.readyState === 0) {
-                    // Init stream if first time
-                    const stream = pipCanvas.captureStream(10); // 10 FPS is enough for text
+                    const stream = pipCanvas.captureStream(10);
                     pipVideo.srcObject = stream;
-                    updatePiPCanvas("Starting Pop-out...");
+                    updatePiPCanvas("Pop-out Ready");
                 }
                 try {
                     await pipVideo.play();
                     await pipVideo.requestPictureInPicture();
                     pipActive = true;
-                    updatePiPCanvas("Waiting for translation...");
                 } catch (e) {
                     alert("Pop-out failed. Try interacting with the page first.");
-                    console.error(e);
                 }
             }
         }
 
-        // --- Other Functions ---
-        function toggleSettings() { document.getElementById('settings-modal').classList.toggle('hidden'); }
-        function saveSettings() {
-            apiKey = document.getElementById('api-key-input').value.trim();
-            localStorage.setItem('gemini_api_key', apiKey);
-            fastMode = document.getElementById('fast-mode-check').checked;
-            toggleSettings();
-        }
         function enterSubtitleMode() {
             document.body.classList.add('subtitle-mode');
             document.getElementById('subtitle-container').classList.remove('hidden');
@@ -632,7 +699,6 @@
             document.querySelector('.exit-btn').classList.add('hidden');
             if (document.exitFullscreen && document.fullscreenElement) document.exitFullscreen().catch(()=>{});
         }
-
     </script>
 </body>
 </html>
