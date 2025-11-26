@@ -1,270 +1,136 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>K-Drama Live Subtitles (Free Version)</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;700&family=Roboto:wght@400;500;700&display=swap');
+<meta charset="UTF-8">
+<title>Admin Page Access Panel</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
 
-        body {
-            font-family: 'Roboto', sans-serif;
-            background-color: #1a1a1a;
-            color: #e5e5e5;
-            overflow-x: hidden;
-        }
-        .korean-font { font-family: 'Noto Sans KR', sans-serif; }
-        
-        /* Subtitle Mode Styles */
-        body.subtitle-mode { background-color: transparent; } /* Transparent for OBS/Overlay potential */
-        body.subtitle-mode .controls-panel,
-        body.subtitle-mode .header-area { display: none !important; }
-        body.subtitle-mode #subtitle-container {
-            position: fixed; bottom: 10%; left: 5%; right: 5%;
-            text-align: center; display: flex; flex-direction: column;
-            justify-content: flex-end; height: 80vh; pointer-events: none;
-        }
-        body.subtitle-mode .exit-btn {
-            display: block; position: fixed; top: 20px; right: 20px;
-            z-index: 50; pointer-events: auto; opacity: 0.3;
-        }
-        body.subtitle-mode .exit-btn:hover { opacity: 1; }
-
-        .recording-pulse { animation: pulse-ring 2s infinite; }
-        @keyframes pulse-ring {
-            0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); }
-            70% { transform: scale(1); box-shadow: 0 0 0 10px rgba(239, 68, 68, 0); }
-            100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
-        }
-        .subtitle-text { text-shadow: 2px 2px 4px rgba(0,0,0,0.8); }
-        
-        /* Scrollbar */
-        ::-webkit-scrollbar { width: 8px; }
-        ::-webkit-scrollbar-track { background: #2d2d2d; }
-        ::-webkit-scrollbar-thumb { background: #555; border-radius: 4px; }
-    </style>
+<style>
+  body { background: #0f0f0f; color: white; font-family: sans-serif; padding: 20px; max-width: 1200px; margin: 0 auto; }
+  h1 { text-align: center; border-bottom: 1px solid #333; padding-bottom: 20px; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 15px; margin-top: 30px; }
+  .card { background: #1f1f1f; border: 1px solid #333; padding: 15px; border-radius: 8px; cursor: pointer; transition: 0.2s; text-align: center; }
+  .card:hover { transform: translateY(-5px); border-color: #00bcd4; }
+  .card h3 { margin: 10px 0 0 0; font-size: 16px; }
+  
+  /* Modal Styles (for user list) */
+  #modal { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.85); z-index: 1000; align-items: center; justify-content: center; }
+  .modal-content { background: #222; width: 100%; max-width: 500px; height: 80vh; border-radius: 12px; display: flex; flex-direction: column; border: 1px solid #444; padding: 20px; }
+  .user-list { flex: 1; overflow-y: auto; margin: 20px 0; border-top: 1px solid #333; }
+  .user-row { display: flex; justify-content: space-between; align-items: center; padding: 12px 5px; border-bottom: 1px solid #333; }
+  .user-info small { color: #888; display: block; }
+  .switch { position: relative; display: inline-block; width: 44px; height: 24px; }
+  .switch input { opacity: 0; width: 0; height: 0; }
+  .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #555; transition: .4s; border-radius: 34px; }
+  .slider:before { position: absolute; content: ""; height: 18px; width: 18px; left: 3px; bottom: 3px; background-color: white; transition: .4s; border-radius: 50%; }
+  input:checked + .slider { background-color: #00bcd4; }
+  input:checked + .slider:before { transform: translateX(20px); }
+  .close-btn { width: 100%; padding: 12px; background: #e53935; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; }
+</style>
 </head>
-<body class="min-h-screen flex flex-col bg-gray-900">
+<body>
 
-    <header class="header-area bg-gray-900 border-b border-gray-800 p-4 shadow-lg sticky top-0 z-20">
-        <div class="max-w-4xl mx-auto flex justify-between items-center">
-            <div class="flex items-center gap-3">
-                <div class="bg-gradient-to-r from-green-500 to-teal-600 w-10 h-10 rounded-lg flex items-center justify-center text-white font-bold text-xl shadow-lg">
-                    <i class="fa-solid fa-earth-asia"></i>
-                </div>
-                <div>
-                    <h1 class="font-bold text-xl text-white tracking-tight">Free Live Subs</h1>
-                    <p class="text-xs text-gray-400">No API Key Required</p>
-                </div>
-            </div>
-        </div>
-    </header>
+<h1>Admin Page Access Control</h1>
+<p style="text-align: center; color: #aaa;">Click a Category Card to manage user access to the full page.</p>
 
-    <main class="flex-grow flex flex-col items-center justify-start pt-6 pb-20 px-4 max-w-4xl mx-auto w-full">
+<div class="grid" id="grid"></div>
 
-        <div class="controls-panel w-full bg-gray-800/50 rounded-2xl p-6 border border-gray-700 shadow-xl backdrop-blur mb-6">
-            <div class="flex flex-col sm:flex-row gap-4 justify-between items-center">
-                <button id="record-btn" onclick="toggleRecording()" 
-                    class="flex-1 sm:flex-none flex items-center justify-center gap-2 bg-gray-700 hover:bg-gray-600 text-white font-semibold py-3 px-6 rounded-xl transition group w-full sm:w-auto">
-                    <div id="record-indicator" class="w-3 h-3 rounded-full bg-red-500"></div>
-                    <span id="record-text">Start Listening</span>
-                </button>
+<div id="modal">
+  <div class="modal-content">
+    <h3 id="modal-title" style="margin:0">Manage Access</h3>
+    <p id="modal-subtitle" style="color:#aaa; font-size:12px; margin:5px 0 0 0;"></p>
+    
+    <div class="user-list" id="user-list">
+      Loading users...
+    </div>
+    
+    <button class="close-btn" onclick="document.getElementById('modal').style.display='none'">CLOSE PANEL</button>
+  </div>
+</div>
 
-                <div class="flex gap-3 w-full sm:w-auto">
-                    <button onclick="clearHistory()" class="bg-gray-700 hover:bg-gray-600 text-gray-300 py-3 px-4 rounded-xl transition">
-                        <i class="fa-solid fa-trash-can"></i>
-                    </button>
-                    <button onclick="enterSubtitleMode()" class="bg-indigo-600 hover:bg-indigo-700 text-white py-3 px-6 rounded-xl transition shadow-md flex items-center gap-2">
-                        <i class="fa-solid fa-expand"></i> Mode
-                    </button>
-                </div>
-            </div>
-            <div class="mt-4 flex items-center gap-2 text-sm">
-                <span class="text-gray-400">Status:</span>
-                <span id="status-text" class="text-yellow-500 font-medium">Ready</span>
-            </div>
-        </div>
+<script>
+// 1. FIREBASE CONFIG
+const firebaseConfig = {
+  apiKey: "AIzaSyAs2S6iRhnYhmqNuF0QCCYu5NuzxHxIRv0",
+  authDomain: "tvnstream-b4497.firebaseapp.com",
+  databaseURL: "https://tvnstream-b4497-default-rtdb.firebaseio.com",
+  projectId: "tvnstream-b4497",
+  storageBucket: "tvnstream-b4497.appspot.com",
+  messagingSenderId: "308384754214",
+  appId: "1:308384754214:web:2938e76cd29b288f75d4e7",
+};
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
 
-        <div id="main-display" class="w-full space-y-6">
-            <div class="bg-gray-900 rounded-2xl p-6 border border-gray-800 min-h-[120px] flex flex-col justify-center items-center text-center shadow-inner relative overflow-hidden">
-                <div class="absolute top-2 left-3 text-xs font-bold text-gray-600 uppercase">Live Input</div>
-                <p id="interim-korean" class="korean-font text-gray-400 text-lg mb-2 opacity-80 min-h-[1.5em]">...</p>
-                <div id="translation-loader" class="hidden absolute top-2 right-3">
-                    <i class="fa-solid fa-circle-notch fa-spin text-green-500"></i>
-                </div>
-                <h2 id="live-english" class="text-2xl md:text-3xl font-bold text-green-400 leading-tight transition-all">
-                    Waiting for speech...
-                </h2>
-            </div>
+// 2. DEFINE PAGES/CATEGORIES (USE THE FILENAME AS THE ID)
+const pageCategories = [
+  { id: "jpnnewtour", name: "SEVENTEEN [NEW_] WORLD TOUR IN JAPAN", filename: "japannewtour" },
+  // ADD MORE PAGES HERE. The 'id' must match the check in Part 2.
+];
 
-            <div class="controls-panel w-full">
-                <h3 class="text-gray-400 text-sm font-bold uppercase tracking-wider mb-3 px-2">History</h3>
-                <div id="history-log" class="bg-black/30 rounded-xl p-4 h-64 overflow-y-auto space-y-3 border border-gray-800/50 font-sans">
-                    <div class="text-center text-gray-600 py-10 italic">Translation history will appear here.</div>
-                </div>
-            </div>
-        </div>
+// 3. RENDER CARDS
+const grid = document.getElementById('grid');
+pageCategories.forEach(p => {
+  const card = document.createElement('div');
+  card.className = 'card';
+  card.innerHTML = `
+    <h3>${p.name}</h3>
+    <small>Page: ${p.filename}</small>
+  `;
+  card.onclick = () => openModal(p);
+  grid.appendChild(card);
+});
 
-        <div id="subtitle-container" class="hidden">
-            <div id="subtitle-content" class="transition-all duration-300">
-                <p id="subtitle-english" class="text-yellow-400 font-bold leading-tight subtitle-text" style="font-size: 32px;">
-                    Listening...
-                </p>
-            </div>
-        </div>
-        
-        <button onclick="exitSubtitleMode()" class="exit-btn hidden bg-white/20 hover:bg-white/40 backdrop-blur text-white rounded-full p-3 transition">
-            <i class="fa-solid fa-compress text-2xl"></i>
-        </button>
+// 4. MODAL LOGIC (User Listing and Toggling)
+let currentPageId = null;
 
-    </main>
+function openModal(page) {
+  currentPageId = page.id;
+  document.getElementById('modal-title').textContent = "Access for: " + page.name;
+  document.getElementById('modal-subtitle').textContent = "Database Node: page_access/" + page.id;
+  document.getElementById('modal').style.display = 'flex';
+  const list = document.getElementById('user-list');
+  list.innerHTML = '<div style="text-align:center; padding:20px;">Loading Database...</div>';
 
-    <script>
-        let recognition;
-        let isListening = false;
-        
-        const recordBtn = document.getElementById('record-btn');
-        const recordIndicator = document.getElementById('record-indicator');
-        const recordText = document.getElementById('record-text');
-        const statusText = document.getElementById('status-text');
-        const interimKoreanEl = document.getElementById('interim-korean');
-        const liveEnglishEl = document.getElementById('live-english');
-        const historyLog = document.getElementById('history-log');
-        const subtitleEnglish = document.getElementById('subtitle-english');
-        const loader = document.getElementById('translation-loader');
+  Promise.all([
+    db.ref('users').once('value'), // Assumes you save user profiles here
+    db.ref('page_access/' + page.id).once('value')
+  ]).then(([userSnap, permSnap]) => {
+    const users = userSnap.val() || {};
+    const perms = permSnap.val() || {};
+    renderUserList(users, perms);
+  });
+}
 
-        function initSpeechRecognition() {
-            if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
-                alert("Please use Google Chrome.");
-                return null;
-            }
-            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-            const rec = new SpeechRecognition();
-            rec.continuous = true; 
-            rec.interimResults = true; 
-            rec.lang = 'ko-KR'; 
+function renderUserList(users, perms) {
+  const list = document.getElementById('user-list');
+  list.innerHTML = '';
+  Object.entries(users).forEach(([uid, userData]) => {
+    const hasAccess = perms[uid] === true;
+    const row = document.createElement('div');
+    row.className = 'user-row';
+    row.innerHTML = `
+      <div class="user-info">
+        <strong>${userData.name || 'Unknown User'}</strong>
+        <small>${userData.email || uid}</small>
+      </div>
+      <label class="switch">
+        <input type="checkbox" ${hasAccess ? 'checked' : ''} onchange="toggleAccess('${uid}', this.checked)">
+        <span class="slider"></span>
+      </label>
+    `;
+    list.appendChild(row);
+  });
+}
 
-            rec.onstart = () => {
-                isListening = true;
-                updateUIState(true);
-                statusText.innerText = "Listening to Korean...";
-                statusText.className = "text-green-400 font-medium";
-            };
-            rec.onerror = (event) => {
-                if (event.error === 'no-speech') return;
-                statusText.innerText = `Error: ${event.error}`;
-                isListening = false;
-                updateUIState(false);
-            };
-            rec.onend = () => {
-                if (isListening) rec.start(); // Auto-restart
-                else updateUIState(false);
-            };
-            rec.onresult = (event) => {
-                let finalTranscript = '';
-                let interimTranscript = '';
-                for (let i = event.resultIndex; i < event.results.length; ++i) {
-                    if (event.results[i].isFinal) finalTranscript += event.results[i][0].transcript;
-                    else interimTranscript += event.results[i][0].transcript;
-                }
-                if (interimTranscript) interimKoreanEl.innerText = interimTranscript;
-                if (finalTranscript) {
-                    interimKoreanEl.innerText = finalTranscript;
-                    handleFinalTranscript(finalTranscript);
-                }
-            };
-            return rec;
-        }
-
-        recognition = initSpeechRecognition();
-
-        function toggleRecording() {
-            if (!recognition) return;
-            if (isListening) {
-                isListening = false;
-                recognition.stop();
-            } else {
-                recognition.start();
-            }
-        }
-
-        function updateUIState(listening) {
-            if (listening) {
-                recordBtn.classList.replace('bg-gray-700', 'bg-red-600');
-                recordBtn.classList.replace('hover:bg-gray-600', 'hover:bg-red-700');
-                recordIndicator.classList.add('recording-pulse');
-                recordIndicator.classList.replace('bg-red-500', 'bg-white');
-                recordText.innerText = "Stop Listening";
-            } else {
-                recordBtn.classList.replace('bg-red-600', 'bg-gray-700');
-                recordBtn.classList.replace('hover:bg-red-700', 'hover:bg-gray-600');
-                recordIndicator.classList.remove('recording-pulse');
-                recordIndicator.classList.replace('bg-white', 'bg-red-500');
-                recordText.innerText = "Start Listening";
-            }
-        }
-
-        // --- FREE TRANSLATION LOGIC (NO KEY) ---
-        async function handleFinalTranscript(koreanText) {
-            loader.classList.remove('hidden');
-            const englishText = await translateFree(koreanText);
-            loader.classList.add('hidden');
-            updateDisplay(koreanText, englishText);
-        }
-
-        async function translateFree(text) {
-            // Using MyMemory API (Free, Public, No Key)
-            // Note: Has daily limits per IP, but good for demos
-            const url = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=ko|en`;
-
-            try {
-                const response = await fetch(url);
-                const data = await response.json();
-                
-                if (data.responseStatus === 200) {
-                    return data.responseData.translatedText;
-                } else {
-                    return "[Limit Reached or Error]";
-                }
-            } catch (error) {
-                console.error(error);
-                return "[Network Error]";
-            }
-        }
-
-        function updateDisplay(korean, english) {
-            liveEnglishEl.innerText = english;
-            subtitleEnglish.innerText = english;
-            
-            // Add to history
-            if (historyLog.querySelector('.italic')) historyLog.innerHTML = '';
-            const item = document.createElement('div');
-            item.className = "bg-gray-800 p-3 rounded-lg border-l-4 border-green-500 animate-[fadeIn_0.5s_ease-out]";
-            item.innerHTML = `<p class="text-xs text-gray-500 mb-1 korean-font">${korean}</p><p class="text-white font-medium">${english}</p>`;
-            historyLog.insertBefore(item, historyLog.firstChild);
-        }
-
-        function clearHistory() {
-            historyLog.innerHTML = '<div class="text-center text-gray-600 py-10 italic">Translation history will appear here.</div>';
-            liveEnglishEl.innerText = "Waiting for speech...";
-            interimKoreanEl.innerText = "...";
-        }
-
-        function enterSubtitleMode() {
-            document.body.classList.add('subtitle-mode');
-            document.getElementById('subtitle-container').classList.remove('hidden');
-            document.querySelector('.exit-btn').classList.remove('hidden');
-            if (document.documentElement.requestFullscreen) document.documentElement.requestFullscreen().catch(e => {});
-        }
-
-        function exitSubtitleMode() {
-            document.body.classList.remove('subtitle-mode');
-            document.getElementById('subtitle-container').classList.add('hidden');
-            document.querySelector('.exit-btn').classList.add('hidden');
-            if (document.exitFullscreen && document.fullscreenElement) document.exitFullscreen().catch(e => {});
-        }
-    </script>
+window.toggleAccess = function(uid, isGranted) {
+  if (!currentPageId) return;
+  // Save to page_access -> pageID -> userID
+  db.ref(`page_access/${currentPageId}/${uid}`).set(isGranted);
+}
+</script>
 </body>
 </html>
