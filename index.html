@@ -7,7 +7,9 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
-
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-192.png">
+<meta name="theme-color" content="#000000">
 <style>
   body { background: #0f0f0f; color: white; font-family: sans-serif; padding: 20px; max-width: 1200px; margin: 0 auto; }
   h1 { text-align: center; border-bottom: 1px solid #333; padding-bottom: 20px; }
@@ -132,5 +134,29 @@ window.toggleAccess = function(uid, isGranted) {
   db.ref(`page_access/${currentPageId}/${uid}`).set(isGranted);
 }
 </script>
+
+  <script>
+  if ("serviceWorker" in navigator) {
+    navigator.serviceWorker.register("/sw.js").then((registration) => {
+      
+      // Check for updates every time the page loads
+      registration.update();
+
+      // If a new service worker is found, reload the page automatically
+      registration.onupdatefound = () => {
+        const installingWorker = registration.installing;
+        installingWorker.onstatechange = () => {
+          if (installingWorker.state === "installed") {
+            if (navigator.serviceWorker.controller) {
+              console.log("New content available, reloading...");
+              window.location.reload();
+            }
+          }
+        };
+      };
+    });
+  }
+</script>
+  
 </body>
 </html>
