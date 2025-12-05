@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Admin Page Access Panel</title>
+<title>Page Access</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
@@ -13,23 +13,57 @@
 <style>
   body { background: #0f0f0f; color: white; font-family: sans-serif; padding: 20px; max-width: 1200px; margin: 0 auto; }
   h1 { text-align: center; border-bottom: 1px solid #333; padding-bottom: 20px; }
-  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 15px; margin-top: 30px; }
-  .card { background: #1f1f1f; border: 1px solid #333; padding: 15px; border-radius: 8px; cursor: pointer; transition: 0.2s; text-align: center; }
-  .card:hover { transform: translateY(-5px); border-color: #00bcd4; }
-  .card h3 { margin: 10px 0 0 0; font-size: 16px; }
   
-  /* Modal Styles (for user list) */
+  /* Grid & Cards */
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 15px; margin-top: 30px; }
+  
+  /* Updated Card Style */
+  .card { 
+    background: #1f1f1f; 
+    border: 1px solid #333; 
+    border-radius: 8px; 
+    cursor: pointer; 
+    transition: 0.2s; 
+    text-align: center; 
+    overflow: hidden; /* Ensures image corners stay rounded */
+    padding: 0; /* Removed padding so image touches edges */
+  }
+  .card:hover { transform: translateY(-5px); border-color: #00bcd4; }
+  
+  /* New Image Style */
+  .card-img {
+    width: 100%;
+    height: 140px; /* Fixed height for uniformity */
+    object-fit: cover; /* Ensures image doesn't stretch weirdly */
+    display: block;
+    border-bottom: 1px solid #333;
+  }
+
+  /* Wrapper for the text inside the card */
+  .card-content { padding: 15px; }
+  .card h3 { margin: 0 0 5px 0; font-size: 16px; }
+  
+  /* Modal Styles */
   #modal { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.85); z-index: 1000; align-items: center; justify-content: center; }
   .modal-content { background: #222; width: 100%; max-width: 500px; height: 80vh; border-radius: 12px; display: flex; flex-direction: column; border: 1px solid #444; padding: 20px; }
-  .user-list { flex: 1; overflow-y: auto; margin: 20px 0; border-top: 1px solid #333; }
+  
+  /* Search Bar Style */
+  .search-bar { width: 100%; padding: 12px; margin: 15px 0 5px 0; background: #333; border: 1px solid #444; color: white; border-radius: 6px; box-sizing: border-box; outline: none; font-size: 14px; }
+  .search-bar:focus { border-color: #00bcd4; }
+
+  /* User List */
+  .user-list { flex: 1; overflow-y: auto; margin: 10px 0 20px 0; border-top: 1px solid #333; }
   .user-row { display: flex; justify-content: space-between; align-items: center; padding: 12px 5px; border-bottom: 1px solid #333; }
   .user-info small { color: #888; display: block; }
+  
+  /* Toggle Switch */
   .switch { position: relative; display: inline-block; width: 44px; height: 24px; }
   .switch input { opacity: 0; width: 0; height: 0; }
   .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #555; transition: .4s; border-radius: 34px; }
   .slider:before { position: absolute; content: ""; height: 18px; width: 18px; left: 3px; bottom: 3px; background-color: white; transition: .4s; border-radius: 50%; }
   input:checked + .slider { background-color: #00bcd4; }
   input:checked + .slider:before { transform: translateX(20px); }
+  
   .close-btn { width: 100%; padding: 12px; background: #e53935; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; }
 </style>
 </head>
@@ -44,6 +78,8 @@
   <div class="modal-content">
     <h3 id="modal-title" style="margin:0">Manage Access</h3>
     <p id="modal-subtitle" style="color:#aaa; font-size:12px; margin:5px 0 0 0;"></p>
+    
+    <input type="text" id="search-input" class="search-bar" placeholder="🔍 Search user by name or email...">
     
     <div class="user-list" id="user-list">
       Loading users...
@@ -67,10 +103,21 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
 
-// 2. DEFINE PAGES/CATEGORIES (USE THE FILENAME AS THE ID)
+// 2. DEFINE PAGES/CATEGORIES
+// REPLACE the 'image' URLs with your actual image links
 const pageCategories = [
-  { id: "jpnnewtour", name: "SEVENTEEN [NEW_] WORLD TOUR IN JAPAN", filename: "japannewtour" },
-  // ADD MORE PAGES HERE. The 'id' must match the check in Part 2.
+  { 
+    id: "jpnnewtour", 
+    name: "SEVENTEEN WORLD TOUR IN JAPAN", 
+    filename: "japannewtour",
+    image: "https://raw.githubusercontent.com/svtzoneph/gallery/main/images/website/new-tour.png" // Put your real image URL here
+  },
+  { 
+    id: "live_access", // CHANGED THIS ID SO IT IS UNIQUE
+    name: "LIVE ACCESS", 
+    filename: "live",
+    image: "https://placehold.co/600x400/1f1f1f/00bcd4?text=LIVE+STREAM" // Put your real image URL here
+  },
 ];
 
 // 3. RENDER CARDS
@@ -78,27 +125,38 @@ const grid = document.getElementById('grid');
 pageCategories.forEach(p => {
   const card = document.createElement('div');
   card.className = 'card';
+  // If the image link fails, it falls back to a grey box
+  const imgSrc = p.image || "https://placehold.co/600x400/333/white?text=No+Image";
+
   card.innerHTML = `
-    <h3>${p.name}</h3>
-    <small>Page: ${p.filename}</small>
+    <img src="${imgSrc}" class="card-img" alt="${p.name}">
+    <div class="card-content">
+      <h3>${p.name}</h3>
+      <small>Page: ${p.filename}</small>
+    </div>
   `;
   card.onclick = () => openModal(p);
   grid.appendChild(card);
 });
 
-// 4. MODAL LOGIC (User Listing and Toggling)
+// 4. MODAL LOGIC
 let currentPageId = null;
+const searchInput = document.getElementById('search-input');
 
 function openModal(page) {
   currentPageId = page.id;
+  
   document.getElementById('modal-title').textContent = "Access for: " + page.name;
   document.getElementById('modal-subtitle').textContent = "Database Node: page_access/" + page.id;
   document.getElementById('modal').style.display = 'flex';
+  
+  searchInput.value = '';
+  
   const list = document.getElementById('user-list');
   list.innerHTML = '<div style="text-align:center; padding:20px;">Loading Database...</div>';
 
   Promise.all([
-    db.ref('users').once('value'), // Assumes you save user profiles here
+    db.ref('users').once('value'), 
     db.ref('page_access/' + page.id).once('value')
   ]).then(([userSnap, permSnap]) => {
     const users = userSnap.val() || {};
@@ -110,6 +168,7 @@ function openModal(page) {
 function renderUserList(users, perms) {
   const list = document.getElementById('user-list');
   list.innerHTML = '';
+  
   Object.entries(users).forEach(([uid, userData]) => {
     const hasAccess = perms[uid] === true;
     const row = document.createElement('div');
@@ -128,21 +187,25 @@ function renderUserList(users, perms) {
   });
 }
 
+searchInput.addEventListener('keyup', (e) => {
+  const term = e.target.value.toLowerCase();
+  const rows = document.querySelectorAll('.user-row');
+  rows.forEach(row => {
+    const text = row.innerText.toLowerCase();
+    row.style.display = text.includes(term) ? 'flex' : 'none';
+  });
+});
+
 window.toggleAccess = function(uid, isGranted) {
   if (!currentPageId) return;
-  // Save to page_access -> pageID -> userID
   db.ref(`page_access/${currentPageId}/${uid}`).set(isGranted);
 }
 </script>
 
-  <script>
+<script>
   if ("serviceWorker" in navigator) {
     navigator.serviceWorker.register("/sw.js").then((registration) => {
-      
-      // Check for updates every time the page loads
       registration.update();
-
-      // If a new service worker is found, reload the page automatically
       registration.onupdatefound = () => {
         const installingWorker = registration.installing;
         installingWorker.onstatechange = () => {
