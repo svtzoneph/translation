@@ -1,4 +1,4 @@
-const CACHE_NAME = "my-app-cache"; // You can leave this name alone forever
+const CACHE_NAME = "1"; // You can leave this name alone forever
 const ASSETS_TO_CACHE = [
   "/",
   "/index.html",
